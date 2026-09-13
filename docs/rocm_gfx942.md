@@ -57,3 +57,29 @@ Interpretation:
 - Mean and median are both ~`1.0x`, indicating near-parity on this reduced sweep.
 - Extremes stay within the same order of magnitude and do not suggest broken timing scale.
 - Ratio check condition is met; Phase 3 can proceed.
+
+## Phase 3 status (attention) in this workspace
+
+I attempted to continue directly with the reduced 200-point attention sweep, but this workspace does not currently have a usable `vllm` install, so the AMD attention path cannot initialize.
+
+Attempted command:
+
+```bash
+PYTHONPATH=. .venv-rocm/bin/python vidur/profiling/attention/main.py --models microsoft/phi-2 --num_gpus 1 --gpu_vendor amd --max_points 200 --output_dir profiling_outputs --disable_ray
+```
+
+Observed blocker:
+
+```text
+ModuleNotFoundError: No module named 'vllm'
+```
+
+Additional attempt (torch backend) also does not currently unblock Phase 3 attention profiling in this tree:
+
+```text
+NotImplementedError
+```
+
+for `TorchRocmBackend.create_attention_wrapper(...)`.
+
+Next runnable path for Phase 3 remains the ROCm vLLM container workflow where `vllm` is present, then rerun the command above (or the same command in-container) and capture artifacts under `profiling_outputs/attention/<timestamp>/`.
