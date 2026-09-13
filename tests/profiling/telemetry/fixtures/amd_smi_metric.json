@@ -1,0 +1,20 @@
+{
+  "gpu_metrics": [
+    {
+      "gpu": 0,
+      "usage": "76 %",
+      "vram_used": "4096 MiB",
+      "vram_total": "16384 MiB",
+      "average_socket_power": "145 W",
+      "temperature_edge": "68 C"
+    },
+    {
+      "gpu": 1,
+      "usage": "54 %",
+      "vram_used": "2048 MiB",
+      "vram_total": "16384 MiB",
+      "average_socket_power": "131 W",
+      "temperature_edge": "62 C"
+    }
+  ]
+}
