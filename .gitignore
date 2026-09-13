@@ -177,3 +177,8 @@ config_optimizer_output_tmpfs
 profiler_traces*
 experiments/profiling/get_profiled_data_from_trace.ipynb
 env_3
+profiler_traces/
+cache/
+wandb/
+simulator_output*/
+*.egg-info/
