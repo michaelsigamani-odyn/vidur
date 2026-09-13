@@ -1,0 +1,1 @@
+{"device_index": 0, "device_name": "AMD Radeon 8060S Graphics", "gpu_utilization_percent": null, "gpu_vendor": "amd", "memory_total_mib": 65536.0, "memory_used_mib": 6044.0, "model": "microsoft/phi-2", "power_draw_watts": 62.0, "profiler": "mlp", "temperature_celsius": 41.0, "timestamp_utc": "2026-09-13T04:40:08.124989+00:00", "vram_total_mib": 65536.0}
