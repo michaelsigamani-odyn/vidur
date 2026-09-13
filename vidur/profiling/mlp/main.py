@@ -21,6 +21,29 @@ from vidur.profiling.utils import ProfileMethod, get_num_tokens_to_profile
 
 logger = init_logger(__name__)
 
+MLP_TIMER_NAMES = [
+    "emb",
+    "input_layernorm",
+    "attn_pre_proj",
+    "attn_rope",
+    "attn_post_proj",
+    "mlp_up_proj",
+    "mlp_act",
+    "mlp_down_proj",
+    "add",
+]
+MLP_TIMER_STATS = ["min", "max", "mean", "median", "std"]
+MLP_BASE_COLUMNS = [
+    "n_head",
+    "n_kv_head",
+    "n_embd",
+    "n_expanded_embd",
+    "vocab_size",
+    "use_gated_mlp",
+    "num_tokens",
+    "num_tensor_parallel_workers",
+]
+
 
 def _read_amd_metric_payload() -> dict:
     output = subprocess.run(
@@ -109,6 +132,27 @@ def _write_jsonl_record(path: str, record: dict) -> None:
         f.write(json.dumps(record) + "\n")
 
 
+def normalize_mlp_results_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = pd.json_normalize(df["time_stats"]).add_prefix("time_stats.").join(
+        df.drop(columns=["time_stats"])
+    )
+
+    ordered_columns = []
+    for timer_name in MLP_TIMER_NAMES:
+        for stat_name in MLP_TIMER_STATS:
+            column_name = f"time_stats.{timer_name}.{stat_name}"
+            if column_name not in df.columns:
+                df[column_name] = float("nan")
+            ordered_columns.append(column_name)
+
+    for base_column in MLP_BASE_COLUMNS:
+        if base_column not in df.columns:
+            df[base_column] = float("nan")
+        ordered_columns.append(base_column)
+
+    return df[ordered_columns]
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="MLP Profiling")
     parser.add_argument(
@@ -169,6 +213,12 @@ def parse_args():
         choices=["auto", "nvidia", "amd"],
         help="GPU telemetry backend. auto selects amd-smi or nvidia-smi from PATH.",
     )
+    parser.add_argument(
+        "--model_executor_backend",
+        default="auto",
+        choices=["auto", "sarathi", "vllm_rocm", "torch"],
+        help="Model executor backend. auto preserves current vendor-based selection.",
+    )
     args = parser.parse_args()
 
     args.output_dir = (
@@ -191,22 +241,35 @@ def profile_model(
     all_results = []
     unsupported = []
 
-    model_wrapper_actor = ray.remote(
-        num_cpus=1,
-        num_gpus=1,
-    )(
-        MlpWrapper,
-    ).options(runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}})
+    if args.disable_ray:
+        def _create_model_wrapper(rank: int):
+            return MlpWrapper(
+                model_config,
+                num_tensor_parallel_workers,
+                args.profile_method,
+                rank,
+                args.output_dir,
+                args.gpu_vendor,
+                args.model_executor_backend,
+            )
+    else:
+        model_wrapper_actor = ray.remote(
+            num_cpus=1,
+            num_gpus=1,
+        )(
+            MlpWrapper,
+        ).options(runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}})
 
-    def _create_model_wrapper(rank: int):
-        return model_wrapper_actor.remote(
-            model_config,
-            num_tensor_parallel_workers,
-            args.profile_method,
-            rank,
-            args.output_dir,
-            args.gpu_vendor,
-        )
+        def _create_model_wrapper(rank: int):
+            return model_wrapper_actor.remote(
+                model_config,
+                num_tensor_parallel_workers,
+                args.profile_method,
+                rank,
+                args.output_dir,
+                args.gpu_vendor,
+                args.model_executor_backend,
+            )
 
     for num_tensor_parallel_workers in args.num_tensor_parallel_workers:
         if model_config.no_tensor_parallel and num_tensor_parallel_workers > 1:
@@ -224,7 +287,10 @@ def profile_model(
 
             try:
                 start_time = time.perf_counter()
-                result = ray.get(model_wrappers[worker_id].profile.remote(num_tokens))
+                if args.disable_ray:
+                    result = model_wrappers[worker_id].profile(num_tokens)
+                else:
+                    result = ray.get(model_wrappers[worker_id].profile.remote(num_tokens))
                 wall_clock_ms = (time.perf_counter() - start_time) * 1e3
                 all_results.append(result)
                 status = "ok"
@@ -270,14 +336,7 @@ def profile_model(
         return pd.DataFrame(), unsupported
 
     df = pd.DataFrame(all_results)
-    # the time_stats column is a dict, so we need to expand it into columns recursively and add prefix
-    df = (
-        pd.json_normalize(df["time_stats"])
-        .add_prefix("time_stats.")
-        .join(df.drop(columns=["time_stats"]))
-    )
-
-    return df, unsupported
+    return normalize_mlp_results_df(df), unsupported
 
 
 def main():

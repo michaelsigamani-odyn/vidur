@@ -32,6 +32,7 @@ class AttentionWrapper:
         attention_backend: str,
         dtype: torch.dtype,
         gpu_vendor: str,
+        model_executor_backend: str = "auto",
     ):
         self.time_stats_store = TimerStatsStore(profile_method="kineto")
 
@@ -51,7 +52,10 @@ class AttentionWrapper:
 
         self._block_size = block_size
 
-        self._model_executor_backend = create_model_executor_backend(gpu_vendor)
+        self._model_executor_backend = create_model_executor_backend(
+            gpu_vendor=gpu_vendor,
+            model_executor_backend=model_executor_backend,
+        )
         self._model_executor_backend.patch_cuda_timer(CudaTimer)
         self._attention_backend = attention_backend
         self._is_first_profile_call = True

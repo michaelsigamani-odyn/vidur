@@ -214,6 +214,12 @@ def parse_args():
         help="GPU telemetry backend. auto selects amd-smi or nvidia-smi from PATH.",
     )
     parser.add_argument(
+        "--model_executor_backend",
+        default="auto",
+        choices=["auto", "sarathi", "vllm_rocm", "torch"],
+        help="Model executor backend. auto preserves current vendor-based selection.",
+    )
+    parser.add_argument(
         "--max_points",
         type=int,
         default=0,
@@ -238,9 +244,13 @@ def profile_model(
     pbar: Any,
     iteration_log_path: str,
     max_points_to_run: int = 0,
+    model_executor_backend_name: str = "auto",
 ):
     model_config = ModelConfig.from_model_name(model)
-    model_executor_backend = create_model_executor_backend(gpu_vendor)
+    model_executor_backend = create_model_executor_backend(
+        gpu_vendor=gpu_vendor,
+        model_executor_backend=model_executor_backend_name,
+    )
     parallel_config = model_executor_backend.create_parallel_config(
         tensor_parallel_size=num_tensor_parallel_workers,
         pipeline_parallel_size=1,
@@ -266,6 +276,7 @@ def profile_model(
             args.attention_backend,
             dtype,
             gpu_vendor,
+            model_executor_backend_name,
         )
         for _ in range(args.num_gpus)
     ]
@@ -280,6 +291,7 @@ def profile_model(
             args.attention_backend,
             dtype,
             gpu_vendor,
+            model_executor_backend_name,
         )
 
     points_ran = 0
@@ -369,11 +381,15 @@ def run_attention_correctness_check(
     attention_backend: str,
     gpu_vendor: str,
     dtype: torch.dtype,
+    model_executor_backend_name: str,
 ) -> dict:
     from vidur.profiling.attention.sequence_proxy import SequenceMetadataProxy
     from vidur.profiling.model_executor_backend import create_model_executor_backend
 
-    backend = create_model_executor_backend(gpu_vendor)
+    backend = create_model_executor_backend(
+        gpu_vendor=gpu_vendor,
+        model_executor_backend=model_executor_backend_name,
+    )
     backend.patch_cuda_timer(CudaTimer)
     TimerStatsStore(profile_method="kineto").clear_stats()
     parallel_config = backend.create_parallel_config(
@@ -506,7 +522,10 @@ def run_attention_correctness_check(
 def main():
     args = parse_args()
 
-    model_executor_backend = create_model_executor_backend(args.gpu_vendor)
+    model_executor_backend = create_model_executor_backend(
+        gpu_vendor=args.gpu_vendor,
+        model_executor_backend=args.model_executor_backend,
+    )
     args.attention_backend = model_executor_backend.resolve_attention_backend(
         args.attention_backend
     )
@@ -576,6 +595,7 @@ def main():
             attention_backend=args.attention_backend,
             gpu_vendor=args.gpu_vendor,
             dtype=dtype,
+            model_executor_backend_name=args.model_executor_backend,
         )
         logger.info(
             "Attention correctness passed for %s with atol=%s rtol=%s max_abs_diff=%.6f",
@@ -608,6 +628,7 @@ def main():
                 pbar,
                 iteration_log_path,
                 max_points_for_call,
+                args.model_executor_backend,
             )
             unsupported.extend(worker_unsupported)
             if not worker_df.empty:
