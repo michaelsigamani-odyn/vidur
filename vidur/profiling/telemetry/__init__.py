@@ -5,10 +5,14 @@ from vidur.profiling.telemetry.backends import (
     NvidiaSmiBackend,
     create_gpu_telemetry_backend,
 )
-from vidur.profiling.telemetry.recorder import GpuTelemetryRecorder
+from vidur.profiling.telemetry.recorder import (
+    BackgroundGpuTelemetrySampler,
+    GpuTelemetryRecorder,
+)
 
 __all__ = [
     "AmdSmiBackend",
+    "BackgroundGpuTelemetrySampler",
     "GpuTelemetryBackend",
     "GpuTelemetryRecorder",
     "GpuTelemetrySample",

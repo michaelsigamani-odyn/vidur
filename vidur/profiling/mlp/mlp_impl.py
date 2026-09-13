@@ -34,7 +34,7 @@ class CausalSelfAttention(torch.nn.Module):
         self.q_size = self.num_q_heads_per_worker * self.head_dim
         self.kv_size = self.num_kv_heads_per_worker * self.head_dim
         self.scaling = self.head_dim**-0.5
-        self._manual_linear_timers = model_executor_backend.name == "vllm_rocm"
+        self._manual_linear_timers = model_executor_backend.needs_manual_linear_timers
 
         self.qkv_proj = ColumnParallelLinear(
             config.embedding_dim,
@@ -97,7 +97,7 @@ class MLP(torch.nn.Module):
         super().__init__()
 
         assert config.embedding_dim % world_size == 0
-        self._manual_linear_timers = model_executor_backend.name == "vllm_rocm"
+        self._manual_linear_timers = model_executor_backend.needs_manual_linear_timers
 
         ColumnParallelLinear = model_executor_backend.get_column_parallel_linear_cls()
         RowParallelLinear = model_executor_backend.get_row_parallel_linear_cls()
@@ -248,7 +248,7 @@ class GPTModel(torch.nn.Module):
         super().__init__()
 
         self.num_repeat_steps = num_repeat_steps
-        self._manual_embedding_timer = model_executor_backend.name == "vllm_rocm"
+        self._manual_embedding_timer = model_executor_backend.needs_manual_embedding_timer
 
         VocabParallelEmbedding = model_executor_backend.get_vocab_parallel_embedding_cls()
 

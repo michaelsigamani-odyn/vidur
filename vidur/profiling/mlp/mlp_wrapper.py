@@ -26,6 +26,7 @@ class MlpWrapper:
         rank: int,
         output_dir: str,
         gpu_vendor: str,
+        model_executor_backend: str = "auto",
     ):
         super().__init__()
 
@@ -37,7 +38,10 @@ class MlpWrapper:
         self.rank = rank
         self.output_dir = output_dir
         self.device = get_torch_device()
-        self.backend = create_model_executor_backend(gpu_vendor)
+        self.backend = create_model_executor_backend(
+            gpu_vendor=gpu_vendor,
+            model_executor_backend=model_executor_backend,
+        )
         self.backend.patch_cuda_timer(CudaTimer)
         self.backend.prepare_mlp_runtime(
             model_name=model_config.name,
