@@ -6,3 +6,4 @@ class DeviceSKUType(BaseIntEnum):
     A100 = 2
     H100 = 3
     RADEON_PRO_W7900 = 4
+    RADEON_8060S = 5

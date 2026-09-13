@@ -1,5 +1,7 @@
 # ROCm gfx1151 Validation Log
 
+Note: existing `RadeonProW7900` SKU entries in Vidur are kept for dGPU profiling data and do not describe this machine (`AMD Radeon 8060S Graphics`, gfx1151).
+
 ## Phase 0 status
 
 Phase 0 **passed** with the primary required image. No compatibility fallback was needed.

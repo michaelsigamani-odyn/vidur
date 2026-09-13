@@ -70,3 +70,13 @@ class RadeonProW7900SingleNodeSKUConfig(BaseNodeSKUConfig):
     @staticmethod
     def get_type():
         return NodeSKUType.RADEON_PRO_W7900_SINGLE
+
+
+@dataclass
+class Radeon8060SSingleNodeSKUConfig(BaseNodeSKUConfig):
+    device_sku_type: DeviceSKUType = DeviceSKUType.RADEON_8060S
+    num_devices_per_node: int = 1
+
+    @staticmethod
+    def get_type():
+        return NodeSKUType.RADEON_8060S_SINGLE
