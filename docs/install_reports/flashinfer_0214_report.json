@@ -1,0 +1,351 @@
+{
+  "version": "1",
+  "pip_version": "26.2.1",
+  "install": [
+    {
+      "download_info": {
+        "url": "https://files.pythonhosted.org/packages/94/d4/4a2bf3d49f84b2d975925c1c024790b4e4768bdefbc5e27529d68368355a/flashinfer_python-0.2.14.post1.tar.gz",
+        "archive_info": {
+          "hashes": {
+            "sha256": "bbee8b97ededc034bcefdfc8eb2c767c1c282f2cd6c67ca487d97121e8a97e2a"
+          },
+          "hash": "sha256=bbee8b97ededc034bcefdfc8eb2c767c1c282f2cd6c67ca487d97121e8a97e2a"
+        }
+      },
+      "is_direct": false,
+      "is_yanked": false,
+      "requested": true,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "flashinfer-python",
+        "version": "0.2.14.post1",
+        "dynamic": [
+          "license-file",
+          "requires-dist"
+        ],
+        "summary": "FlashInfer: Kernel Library for LLM Serving",
+        "description": "<p align=\"center\">\n  <picture>\n    <source media=\"(prefers-color-scheme: dark)\" srcset=\"https://github.com/flashinfer-ai/web-data/blob/main/logo/FlashInfer-black-background.png?raw=true\">\n    <img alt=\"FlashInfer\" src=\"https://github.com/flashinfer-ai/web-data/blob/main/logo/FlashInfer-white-background.png?raw=true\" width=55%>\n  </picture>\n</p>\n<h1 align=\"center\">\nKernel Library for LLM Serving\n</h1>\n\n<p align=\"center\">\n| <a href=\"https://flashinfer.ai\"><b>Blog</b></a> | <a href=\"https://docs.flashinfer.ai\"><b>Documentation</b></a> | <a href=\"https://join.slack.com/t/flashinfer/shared_invite/zt-379wct3hc-D5jR~1ZKQcU00WHsXhgvtA\"><b>Slack</b></a> |  <a href=\"https://github.com/orgs/flashinfer-ai/discussions\"><b>Discussion Forum</b></a> |\n</p>\n\n[![Build Status](https://ci.tlcpack.ai/job/flashinfer-ci/job/main/badge/icon)](https://ci.tlcpack.ai/job/flashinfer-ci/job/main/)\n[![Release](https://github.com/flashinfer-ai/flashinfer/actions/workflows/release_wheel.yml/badge.svg)](https://github.com/flashinfer-ai/flashinfer/actions/workflows/release_wheel.yml)\n[![Documentation](https://github.com/flashinfer-ai/flashinfer/actions/workflows/build-doc.yml/badge.svg)](https://github.com/flashinfer-ai/flashinfer/actions/workflows/build-doc.yml)\n\n\nFlashInfer is a library and kernel generator for Large Language Models that provides high-performance implementation of LLM GPU kernels such as FlashAttention, SparseAttention, PageAttention, Sampling, and more. FlashInfer focuses on LLM serving and inference, and delivers state-of-the-art performance across diverse scenarios.\n\nCheck our [v0.2 release blog](https://flashinfer.ai/2024/12/16/flashinfer-v02-release.html) for new features!\n\nThe core features of FlashInfer include:\n1. **Efficient Sparse/Dense Attention Kernels**: Efficient single/batch attention for sparse(paged)/dense KV-storage on CUDA Cores and Tensor Cores (both FA2 & FA3) templates. The vector-sparse attention can achieve 90% of the bandwidth of dense kernels with same problem size.\n2. **Load-Balanced Scheduling**: FlashInfer decouples `plan`/`run` stage of attention computation where we schedule the computation of variable-length inputs in `plan` stage to alleviate load-imbalance issue.\n3. **Memory Efficiency**: FlashInfer offers [Cascade Attention](https://docs.flashinfer.ai/api/cascade.html#flashinfer.cascade.MultiLevelCascadeAttentionWrapper) for hierarchical KV-Cache, and implements Head-Query fusion for accelerating Grouped-Query Attention, and efficient kernels for low-precision attention and fused-RoPE attention for compressed KV-Cache.\n4. **Customizable Attention**: Bring your own attention variants through JIT-compilation.\n5. **CUDAGraph and torch.compile Compatibility**: FlashInfer kernels can be captured by CUDAGraphs and torch.compile for low-latency inference.\n6. **Efficient LLM-specific Operators**: High-Performance [fused kernel for Top-P, Top-K/Min-P sampling](https://docs.flashinfer.ai/api/sampling.html) without the need to sorting.\n\nFlashInfer supports PyTorch, TVM and C++ (header-only) APIs, and can be easily integrated into existing projects.\n\n## News\n- [Mar 10, 2025] [Blog Post](https://flashinfer.ai/2025/03/10/sampling.html) Sorting-Free GPU Kernels for LLM Sampling, which explains the design of sampling kernels in FlashInfer.\n- [Mar 1, 2025] Checkout flashinfer's [intra-kernel profiler](https://github.com/flashinfer-ai/flashinfer/tree/main/profiler) for visualizing the timeline of each threadblock in GPU kernels.\n- [Dec 16, 2024] [Blog Post](https://flashinfer.ai/2024/12/16/flashinfer-v02-release.html) FlashInfer 0.2 - Efficient and Customizable Kernels for LLM Inference Serving\n- [Sept 2024] We've launched a [Slack](https://join.slack.com/t/flashinfer/shared_invite/zt-2r93kj2aq-wZnC2n_Z2~mf73N5qnVGGA) workspace for Flashinfer users and developers. Join us for timely support, discussions, updates and knowledge sharing!\n- [Jan 31, 2024] [Blog Post](https://flashinfer.ai/2024/01/08/cascade-inference.html) Cascade Inference: Memory-Efficient Shared Prefix Batch Decoding\n- [Jan 31, 2024] [Blog Post](https://flashinfer.ai/2024/01/03/introduce-flashinfer.html) Accelerating Self-Attentions for LLM Serving with FlashInfer\n\n## Getting Started\n\nUsing our PyTorch API is the easiest way to get started:\n\n### Install from PIP\n\nFlashInfer is available as a Python package for Linux on PyPI. You can install it with the following command:\n\n```bash\npip install flashinfer-python\n```\n\n### Install from Source\n\nAlternatively, build FlashInfer from source:\n\n```bash\ngit clone https://github.com/flashinfer-ai/flashinfer.git --recursive\ncd flashinfer\npython -m pip install -v .\n\n# for development & contribution, install in editable mode\npython -m pip install --no-build-isolation -e . -v\n```\n\nTo pre-compile essential kernels ahead-of-time (AOT), run the following command:\n\n```bash\n# Set target CUDA architectures\nexport TORCH_CUDA_ARCH_LIST=\"7.5 8.0 8.9 9.0a 10.0a\"\n# Build AOT kernels. Will produce AOT kernels in aot-ops/\npython -m flashinfer.aot\n# Build AOT wheel\npython -m build --no-isolation --wheel\n# Install AOT wheel\npython -m pip install dist/flashinfer_*.whl\n```\n\nFor more details, refer to the [Install from Source documentation](https://docs.flashinfer.ai/installation.html#install-from-source).\n\n### Trying it out\n\nBelow is a minimal example of using FlashInfer's single-request decode/append/prefill attention kernels:\n\n```python\nimport torch\nimport flashinfer\n\nkv_len = 2048\nnum_kv_heads = 32\nhead_dim = 128\n\nk = torch.randn(kv_len, num_kv_heads, head_dim).half().to(0)\nv = torch.randn(kv_len, num_kv_heads, head_dim).half().to(0)\n\n# decode attention\n\nnum_qo_heads = 32\nq = torch.randn(num_qo_heads, head_dim).half().to(0)\n\no = flashinfer.single_decode_with_kv_cache(q, k, v) # decode attention without RoPE on-the-fly\no_rope_on_the_fly = flashinfer.single_decode_with_kv_cache(q, k, v, pos_encoding_mode=\"ROPE_LLAMA\") # decode with LLaMA style RoPE on-the-fly\n\n# append attention\nappend_qo_len = 128\nq = torch.randn(append_qo_len, num_qo_heads, head_dim).half().to(0) # append attention, the last 128 tokens in the KV-Cache are the new tokens\no = flashinfer.single_prefill_with_kv_cache(q, k, v, causal=True) # append attention without RoPE on-the-fly, apply causal mask\no_rope_on_the_fly = flashinfer.single_prefill_with_kv_cache(q, k, v, causal=True, pos_encoding_mode=\"ROPE_LLAMA\") # append attention with LLaMA style RoPE on-the-fly, apply causal mask\n\n# prefill attention\nqo_len = 2048\nq = torch.randn(qo_len, num_qo_heads, head_dim).half().to(0) # prefill attention\no = flashinfer.single_prefill_with_kv_cache(q, k, v, causal=False) # prefill attention without RoPE on-the-fly, do not apply causal mask\n```\n\nCheck out [documentation](https://docs.flashinfer.ai/) for usage of batch decode/append/prefill kernels and shared-prefix cascading kernels.\n\n## Custom Attention Variants\n\nStarting from FlashInfer v0.2, users can customize their own attention variants with additional parameters. For more details, refer to our [JIT examples](https://github.com/flashinfer-ai/flashinfer/blob/main/tests/test_jit_example.py).\n\n## C++ API and TVM Bindings\n\nFlashInfer also provides C++ API and TVM bindings, please refer to [documentation](https://docs.flashinfer.ai/) for more details.\n\n## Adoption\n\nWe are thrilled to share that FlashInfer is being adopted by many cutting-edge projects, including but not limited to:\n- [MLC-LLM](https://github.com/mlc-ai/mlc-llm)\n- [Punica](https://github.com/punica-ai/punica)\n- [SGLang](https://github.com/sgl-project/sglang)\n- [ScaleLLM](https://github.com/vectorch-ai/ScaleLLM)\n- [vLLM](https://github.com/vllm-project/vllm)\n- [TGI](https://github.com/huggingface/text-generation-inference)\n- [lorax](https://github.com/predibase/lorax)\n- [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)\n- [LightLLM](https://github.com/ModelTC/lightllm)\n\n## Acknowledgement\n\nFlashInfer is inspired by [FlashAttention 1&2](https://github.com/dao-AILab/flash-attention/), [vLLM](https://github.com/vllm-project/vllm), [stream-K](https://arxiv.org/abs/2301.03598), [cutlass](https://github.com/nvidia/cutlass) and [AITemplate](https://github.com/facebookincubator/AITemplate) projects.\n\n## Citation\n\nIf you find FlashInfer helpful in your project or research, please consider citing our [paper](https://arxiv.org/abs/2501.01005):\n\n```bibtex\n@article{ye2025flashinfer,\n    title = {FlashInfer: Efficient and Customizable Attention Engine for LLM Inference Serving},\n    author = {\n      Ye, Zihao and\n      Chen, Lequn and\n      Lai, Ruihang and\n      Lin, Wuwei and\n      Zhang, Yineng and\n      Wang, Stephanie and\n      Chen, Tianqi and\n      Kasikci, Baris and\n      Grover, Vinod and\n      Krishnamurthy, Arvind and\n      Ceze, Luis\n    },\n    journal = {arXiv preprint arXiv:2501.01005},\n    year = {2025},\n    url = {https://arxiv.org/abs/2501.01005}\n}\n```\n",
+        "description_content_type": "text/markdown",
+        "author": "FlashInfer team",
+        "license_expression": "Apache-2.0",
+        "license_file": [
+          "LICENSE",
+          "licenses/LICENSE.cutlass.txt",
+          "licenses/LICENSE.flashattention3.txt",
+          "licenses/LICENSE.fmt.txt",
+          "licenses/LICENSE.spdlog.txt"
+        ],
+        "requires_dist": [
+          "numpy",
+          "torch",
+          "ninja",
+          "requests",
+          "cuda-python<=12.9",
+          "pynvml",
+          "einops",
+          "packaging>=24.2",
+          "nvidia-cudnn-frontend>=1.13.0"
+        ],
+        "requires_python": "<4.0,>=3.9",
+        "project_url": [
+          "Homepage, https://github.com/flashinfer-ai/flashinfer"
+        ]
+      }
+    },
+    {
+      "download_info": {
+        "url": "https://files.pythonhosted.org/packages/24/3c/4475aebeaab9651f2e61000fbe76f91a476d371dbfbf0a1cf46e689af253/cuda_python-12.9.0-py3-none-any.whl",
+        "archive_info": {
+          "hashes": {
+            "sha256": "926acba49b2c0a0374c61b7c98f337c085199cf51cdfe4d6423c4129c20547a7"
+          },
+          "hash": "sha256=926acba49b2c0a0374c61b7c98f337c085199cf51cdfe4d6423c4129c20547a7"
+        }
+      },
+      "is_direct": false,
+      "is_yanked": false,
+      "requested": false,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "cuda-python",
+        "version": "12.9.0",
+        "dynamic": [
+          "license-file",
+          "provides-extra",
+          "requires-dist"
+        ],
+        "summary": "CUDA Python: Performance meets Productivity",
+        "description": ".. SPDX-License-Identifier: LicenseRef-NVIDIA-SOFTWARE-LICENSE\n\n**************************************************************\ncuda-python: Metapackage collection of CUDA Python subpackages\n**************************************************************\n\nCUDA Python is the home for accessing NVIDIA's CUDA platform from Python. It consists of multiple components:\n\n* `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/latest>`_: Pythonic access to CUDA Runtime and other core functionalities\n* `cuda.bindings <https://nvidia.github.io/cuda-python/cuda-bindings/latest>`_: Low-level Python bindings to CUDA C APIs\n* `cuda.cooperative <https://nvidia.github.io/cccl/cuda_cooperative/>`_: A Python package providing CCCL's reusable block-wide and warp-wide *device* primitives for use within Numba CUDA kernels\n* `cuda.parallel <https://nvidia.github.io/cccl/cuda_parallel/>`_: A Python package for easy access to CCCL's highly efficient and customizable parallel algorithms, like `sort`, `scan`, `reduce`, `transform`, etc, that are callable on the *host*\n* `numba.cuda <https://nvidia.github.io/numba-cuda/>`_: Numba's target for CUDA GPU programming by directly compiling a restricted subset of Python code into CUDA kernels and device functions following the CUDA execution model.\n\nFor access to NVIDIA CPU & GPU Math Libraries, please refer to `nvmath-python <https://docs.nvidia.com/cuda/nvmath-python/latest>`_.\n\nCUDA Python is currently undergoing an overhaul to improve existing and bring up new components. All of the previously available functionalities from the `cuda-python` package will continue to be available, please refer to the `cuda.bindings <https://nvidia.github.io/cuda-python/cuda-bindings/latest>`_ documentation for installation guide and further detail.\n\ncuda-python as a metapackage\n============================\n\n`cuda-python` is now a metapackage that contains a collection of subpackages. Each subpackage is versioned independently, allowing installation of each component as needed.\n\nSubpackage: cuda.core\n---------------------\n\nThe `cuda.core` package offers idiomatic, pythonic access to CUDA Runtime and other functionalities.\n\nThe goals are to\n\n1. Provide **idiomatic (\"pythonic\")** access to CUDA Driver, Runtime, and JIT compiler toolchain\n2. Focus on **developer productivity** by ensuring end-to-end CUDA development can be performed quickly and entirely in Python\n3. **Avoid homegrown** Python abstractions for CUDA for new Python GPU libraries starting from scratch\n4. **Ease** developer **burden of maintaining** and catching up with latest CUDA features\n5. **Flatten the learning curve** for current and future generations of CUDA developers\n\nSubpackage: cuda.bindings\n-------------------------\n\nThe `cuda.bindings` package is a standard set of low-level interfaces, providing full coverage of and access to the CUDA host APIs from Python.\n\nThe list of available interfaces are:\n\n* CUDA Driver\n* CUDA Runtime\n* NVRTC\n* nvJitLink\n* NVVM\n",
+        "description_content_type": "text/x-rst",
+        "author_email": "NVIDIA Corporation <cuda-python-conduct@nvidia.com>",
+        "license_expression": "LicenseRef-NVIDIA-SOFTWARE-LICENSE",
+        "license_file": [
+          "LICENSE"
+        ],
+        "classifier": [
+          "Operating System :: POSIX :: Linux",
+          "Operating System :: Microsoft :: Windows",
+          "Topic :: Software Development :: Libraries",
+          "Topic :: Education",
+          "Topic :: Scientific/Engineering",
+          "Intended Audience :: Developers",
+          "Intended Audience :: Science/Research",
+          "Intended Audience :: End Users/Desktop",
+          "Programming Language :: Python :: 3 :: Only",
+          "Programming Language :: Python :: 3.9",
+          "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3.12",
+          "Programming Language :: Python :: 3.13",
+          "Programming Language :: Python :: Implementation :: CPython",
+          "Environment :: GPU :: NVIDIA CUDA",
+          "Environment :: GPU :: NVIDIA CUDA :: 12"
+        ],
+        "requires_dist": [
+          "cuda-bindings~=12.9.0",
+          "cuda-bindings[all]~=12.9.0; extra == \"all\""
+        ],
+        "project_url": [
+          "homepage, https://nvidia.github.io/cuda-python/",
+          "documentation, https://nvidia.github.io/cuda-python/",
+          "repository, https://github.com/NVIDIA/cuda-python/",
+          "issues, https://github.com/NVIDIA/cuda-python/issues/"
+        ],
+        "provides_extra": [
+          "all"
+        ]
+      }
+    },
+    {
+      "download_info": {
+        "url": "https://files.pythonhosted.org/packages/32/45/557d4ed1fa54f0c7db8aee083229f624990d69f7d00f55477eed5c7e169a/cuda_bindings-12.9.7-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl",
+        "archive_info": {
+          "hashes": {
+            "sha256": "0666d3c082ef8f4b2d670950589373550e9f3bf564d635dd883f24a0b40402ff"
+          },
+          "hash": "sha256=0666d3c082ef8f4b2d670950589373550e9f3bf564d635dd883f24a0b40402ff"
+        }
+      },
+      "is_direct": false,
+      "is_yanked": false,
+      "requested": false,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "cuda-bindings",
+        "version": "12.9.7",
+        "dynamic": [
+          "license-file"
+        ],
+        "summary": "Python bindings for CUDA",
+        "description": ".. SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n.. SPDX-License-Identifier: LicenseRef-NVIDIA-SOFTWARE-LICENSE\n\n****************************************\ncuda-bindings: Low-level CUDA interfaces\n****************************************\n\n`cuda.bindings <https://nvidia.github.io/cuda-python/cuda-bindings/>`_ is a standard set of low-level interfaces, providing full coverage of and 1:1 access to the CUDA host APIs from Python. Checkout the `Overview <https://nvidia.github.io/cuda-python/cuda-bindings/latest/overview.html>`_ for the workflow and performance results.\n\n* `Repository <https://github.com/NVIDIA/cuda-python/tree/main/cuda_bindings>`_\n* `Documentation <https://nvidia.github.io/cuda-python/cuda-bindings/>`_\n* `Examples <https://github.com/NVIDIA/cuda-python/tree/main/cuda_bindings/examples>`_\n* `Issue tracker <https://github.com/NVIDIA/cuda-python/issues/>`_\n\nFor the installation instruction, please refer to the `Installation <https://nvidia.github.io/cuda-python/cuda-bindings/latest/install.html>`_ page.\n",
+        "description_content_type": "text/x-rst",
+        "author_email": "NVIDIA Corporation <cuda-python-conduct@nvidia.com>",
+        "license_expression": "LicenseRef-NVIDIA-SOFTWARE-LICENSE",
+        "license_file": [
+          "LICENSE"
+        ],
+        "classifier": [
+          "Intended Audience :: Developers",
+          "Topic :: Database",
+          "Topic :: Scientific/Engineering",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 3.9",
+          "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3.12",
+          "Programming Language :: Python :: 3.13",
+          "Environment :: GPU :: NVIDIA CUDA"
+        ],
+        "requires_dist": [
+          "cuda-pathfinder~=1.1",
+          "nvidia-cuda-nvcc-cu12; extra == \"all\"",
+          "nvidia-cuda-nvrtc-cu12; extra == \"all\"",
+          "nvidia-nvjitlink-cu12>=12.3; extra == \"all\"",
+          "nvidia-nvfatbin-cu12; extra == \"all\"",
+          "nvidia-cufile-cu12; sys_platform == \"linux\" and extra == \"all\"",
+          "cython<3.3,>=3.2; extra == \"test\"",
+          "setuptools>=77.0.0; extra == \"test\"",
+          "numpy>=1.21.1; extra == \"test\"",
+          "pytest>=6.2.4; extra == \"test\"",
+          "pytest-benchmark>=3.4.1; extra == \"test\"",
+          "pyglet>=2.1.9; extra == \"test\""
+        ],
+        "project_url": [
+          "Repository, https://github.com/NVIDIA/cuda-python",
+          "Documentation, https://nvidia.github.io/cuda-python/"
+        ],
+        "provides_extra": [
+          "all",
+          "test"
+        ]
+      }
+    },
+    {
+      "download_info": {
+        "url": "https://files.pythonhosted.org/packages/d7/4a/cac76c174bb439a0c46c9a4413fcbea5c6cabfb01879f7bbdb9fdfaed76c/pynvml-13.0.1-py3-none-any.whl",
+        "archive_info": {
+          "hashes": {
+            "sha256": "e2b20e0a501eeec951e2455b7ab444759cf048e0e13a57b08049fa2775266aa8"
+          },
+          "hash": "sha256=e2b20e0a501eeec951e2455b7ab444759cf048e0e13a57b08049fa2775266aa8"
+        }
+      },
+      "is_direct": false,
+      "is_yanked": false,
+      "requested": false,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "pynvml",
+        "version": "13.0.1",
+        "dynamic": [
+          "license-file"
+        ],
+        "summary": "Python utilities for the NVIDIA Management Library",
+        "description": "> [!WARNING]\n> \n> **This project has been deprecated.**\n>\n> **The `pynvml` module is NOT developed or maintained in this project!**\n> \n> This project provides unofficial NVML Python utilities (i.e. the `pynvml_utils` module).\n> The `pynvml_utils` module is intended for demonstration purposes only.\n> There is no guarantee for long-term maintenence or support.\n>\n> The `pynvml_utils` module depends on the official NVML bindings\n> published by NVIDIA under a different `nvidia-ml-py` project\n> (see: https://pypi.org/project/nvidia-ml-py/).\n>\n\n\nPython utilities for the NVIDIA Management Library\n===============================================================\n\nThis project provides unofficial Python utilities for the\nNVIDIA Management Library (NVML).\n\nFor information about the NVML library, see the NVML developer page\nhttp://developer.nvidia.com/nvidia-management-library-nvml\n\n\nRequires\n--------\n`nvidia-ml-py`.\n\n\nInstallation\n------------\n\n    pip install .\n\nUsage\n-----\n\nBindings for the high-level `nvidia-smi` API are available\nin `pynvml_utils.nvidia_smi`:\n\n> [!WARNING]\n> The `nvidia_smi` module is intended for demonstration purposes only.\n> There is no guarantee for long-term maintenence or support.\n\n```python\nfrom pynvml_utils import nvidia_smi\nnvsmi = nvidia_smi.getInstance()\nnvsmi.DeviceQuery('memory.free, memory.total')\n```\n\n```python\nfrom pynvml_utils import nvidia_smi\nnvsmi = nvidia_smi.getInstance()\nprint(nvsmi.DeviceQuery('--help-query-gpu'), end='\\n')\n```\n\nRelease Notes\n-------------\n\n-   Version 13.0.1\n    - Both pynvml and pynvml_utils are now deprecated.\n    - Pin to nvidia-ml-py>=12.0.0\n\n\nOld Releases\n------------\n\n-   Version 2.285.0\n    - Added new functions for NVML 2.285.  See NVML documentation for more information.\n    - Ported to support Python 3.0 and Python 2.0 syntax.\n    - Added nvidia_smi.py tool as a sample app.\n-   Version 3.295.0\n    - Added new functions for NVML 3.295.  See NVML documentation for more information.\n    - Updated nvidia_smi.py tool\n      - Includes additional error handling\n-   Version 4.304.0\n    - Added new functions for NVML 4.304.  See NVML documentation for more information.\n    - Updated nvidia_smi.py tool\n-   Version 4.304.3\n    - Fixing nvmlUnitGetDeviceCount bug\n-   Version 5.319.0\n    - Added new functions for NVML 5.319.  See NVML documentation for more information.\n-   Version 6.340.0\n    - Added new functions for NVML 6.340.  See NVML documentation for more information.\n-   Version 7.346.0\n    - Added new functions for NVML 7.346.  See NVML documentation for more information.\n-   Version 7.352.0\n    - Added new functions for NVML 7.352.  See NVML documentation for more information.\n-   Version 8.0.0\n    - Refactor code to a nvidia_smi singleton class\n    - Added DeviceQuery that returns a dictionary of (name, value).\n    - Added filter parameters on DeviceQuery to match query api in nvidia-smi\n    - Added filter parameters on XmlDeviceQuery to match query api in nvidia-smi\n    - Added integer enumeration for filter strings to reduce overhead for performance monitoring.\n    - Added loop(filter) method with async and callback support\n-   Version 8.0.1\n    - Restructuring directories into two packages (pynvml and nvidia_smi)\n    - Adding initial tests for both packages\n    - Some name-convention cleanup in pynvml\n-   Version 8.0.2\n    - Added NVLink function wrappers for pynvml module\n-   Version 8.0.3\n    - Added versioneer\n    - Fixed nvmlDeviceGetNvLinkUtilizationCounter bug\n-   Version 8.0.4\n    - Added nvmlDeviceGetTotalEnergyConsumption\n    - Added notes about NVML permissions\n    - Fixed version-check testing\n-   Version 11.0.0\n    - Updated nvml.py to CUDA 11\n    - Updated smi.py DeviceQuery to R460\n    - Aligned nvml.py with latest nvidia-ml-py deployment\n-   Version 11.4.0\n    - Updated nvml.py to CUDA 11.4\n    - Updated smi.py NVML_BRAND_NAMES\n    - Aligned nvml.py with latest nvidia-ml-py deployment (11.495.46)\n-   Version 11.4.1\n    - Fix comma bugs in nvml.py\n-   Version 11.5.0\n    - Updated nvml.py to support CUDA 11.5 and CUDA 12\n    - Aligned with latest nvidia-ml-py deployment (11.525.84)\n-   Version 11.5.2\n    - Relocated smi bindings to new pynvml_utils module\n    - Updated README to encourage migration to nvidia-ml-py\n-   Version 11.5.3\n    - Update versioneer\n-   Version 12.0.0\n    - Remove pynvml module and depend on nvidia-ml-py instead\n    - Pin to nvidia-ml-py>=12.0.0,<13.0.0a0\n",
+        "description_content_type": "text/markdown",
+        "author": "NVIDIA Corporation",
+        "license": "BSD-3-Clause",
+        "license_file": [
+          "LICENSE.txt"
+        ],
+        "classifier": [
+          "Development Status :: 7 - Inactive",
+          "Intended Audience :: Developers",
+          "Intended Audience :: System Administrators",
+          "License :: OSI Approved :: BSD License",
+          "Operating System :: Microsoft :: Windows",
+          "Operating System :: POSIX :: Linux",
+          "Programming Language :: Python",
+          "Topic :: Software Development :: Libraries :: Python Modules",
+          "Topic :: System :: Hardware",
+          "Topic :: System :: Systems Administration",
+          "Programming Language :: Python :: 3"
+        ],
+        "requires_dist": [
+          "nvidia-ml-py>=12.0.0",
+          "pytest>=3.6; extra == \"test\"",
+          "pytest-runner; extra == \"test\"",
+          "pytest-cov; extra == \"test\""
+        ],
+        "requires_python": ">=3.9",
+        "project_url": [
+          "Homepage, https://github.com/gpuopenanalytics/pynvml",
+          "Source, https://github.com/gpuopenanalytics/pynvml"
+        ],
+        "provides_extra": [
+          "test"
+        ]
+      }
+    },
+    {
+      "download_info": {
+        "url": "https://files.pythonhosted.org/packages/cc/af/758e242e9102e9988969b5e621d41f36b8f258bb4a099109b7a4b4b50ea4/torch-2.10.0-cp312-cp312-manylinux_2_28_aarch64.whl",
+        "archive_info": {
+          "hashes": {
+            "sha256": "5fd4117d89ffd47e3dcc71e71a22efac24828ad781c7e46aaaf56bf7f2796acf"
+          },
+          "hash": "sha256=5fd4117d89ffd47e3dcc71e71a22efac24828ad781c7e46aaaf56bf7f2796acf"
+        }
+      },
+      "is_direct": false,
+      "is_yanked": false,
+      "requested": false,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "torch",
+        "version": "2.10.0",
+        "dynamic": [
+          "license-file",
+          "requires-dist"
+        ],
+        "summary": "Tensors and Dynamic neural networks in Python with strong GPU acceleration",
+        "description": "![PyTorch Logo](https://github.com/pytorch/pytorch/raw/main/docs/source/_static/img/pytorch-logo-dark.png)\n\n--------------------------------------------------------------------------------\n\nPyTorch is a Python package that provides two high-level features:\n- Tensor computation (like NumPy) with strong GPU acceleration\n- Deep neural networks built on a tape-based autograd system\n\nYou can reuse your favorite Python packages such as NumPy, SciPy, and Cython to extend PyTorch when needed.\n\nOur trunk health (Continuous Integration signals) can be found at [hud.pytorch.org](https://hud.pytorch.org/ci/pytorch/pytorch/main).\n\n<!-- toc -->\n\n- [More About PyTorch](#more-about-pytorch)\n  - [A GPU-Ready Tensor Library](#a-gpu-ready-tensor-library)\n  - [Dynamic Neural Networks: Tape-Based Autograd](#dynamic-neural-networks-tape-based-autograd)\n  - [Python First](#python-first)\n  - [Imperative Experiences](#imperative-experiences)\n  - [Fast and Lean](#fast-and-lean)\n  - [Extensions Without Pain](#extensions-without-pain)\n- [Installation](#installation)\n  - [Binaries](#binaries)\n    - [NVIDIA Jetson Platforms](#nvidia-jetson-platforms)\n  - [From Source](#from-source)\n    - [Prerequisites](#prerequisites)\n      - [NVIDIA CUDA Support](#nvidia-cuda-support)\n      - [AMD ROCm Support](#amd-rocm-support)\n      - [Intel GPU Support](#intel-gpu-support)\n    - [Get the PyTorch Source](#get-the-pytorch-source)\n    - [Install Dependencies](#install-dependencies)\n    - [Install PyTorch](#install-pytorch)\n      - [Adjust Build Options (Optional)](#adjust-build-options-optional)\n  - [Docker Image](#docker-image)\n    - [Using pre-built images](#using-pre-built-images)\n    - [Building the image yourself](#building-the-image-yourself)\n  - [Building the Documentation](#building-the-documentation)\n    - [Building a PDF](#building-a-pdf)\n  - [Previous Versions](#previous-versions)\n- [Getting Started](#getting-started)\n- [Resources](#resources)\n- [Communication](#communication)\n- [Releases and Contributing](#releases-and-contributing)\n- [The Team](#the-team)\n- [License](#license)\n\n<!-- tocstop -->\n\n## More About PyTorch\n\n[Learn the basics of PyTorch](https://pytorch.org/tutorials/beginner/basics/intro.html)\n\nAt a granular level, PyTorch is a library that consists of the following components:\n\n| Component | Description |\n| ---- | --- |\n| [**torch**](https://pytorch.org/docs/stable/torch.html) | A Tensor library like NumPy, with strong GPU support |\n| [**torch.autograd**](https://pytorch.org/docs/stable/autograd.html) | A tape-based automatic differentiation library that supports all differentiable Tensor operations in torch |\n| [**torch.jit**](https://pytorch.org/docs/stable/jit.html) | A compilation stack (TorchScript) to create serializable and optimizable models from PyTorch code  |\n| [**torch.nn**](https://pytorch.org/docs/stable/nn.html) | A neural networks library deeply integrated with autograd designed for maximum flexibility |\n| [**torch.multiprocessing**](https://pytorch.org/docs/stable/multiprocessing.html) | Python multiprocessing, but with magical memory sharing of torch Tensors across processes. Useful for data loading and Hogwild training |\n| [**torch.utils**](https://pytorch.org/docs/stable/data.html) | DataLoader and other utility functions for convenience |\n\nUsually, PyTorch is used either as:\n\n- A replacement for NumPy to use the power of GPUs.\n- A deep learning research platform that provides maximum flexibility and speed.\n\nElaborating Further:\n\n### A GPU-Ready Tensor Library\n\nIf you use NumPy, then you have used Tensors (a.k.a. ndarray).\n\n![Tensor illustration](https://github.com/pytorch/pytorch/raw/main/docs/source/_static/img/tensor_illustration.png)\n\nPyTorch provides Tensors that can live either on the CPU or the GPU and accelerates the\ncomputation by a huge amount.\n\nWe provide a wide variety of tensor routines to accelerate and fit your scientific computation needs\nsuch as slicing, indexing, mathematical operations, linear algebra, reductions.\nAnd they are fast!\n\n### Dynamic Neural Networks: Tape-Based Autograd\n\nPyTorch has a unique way of building neural networks: using and replaying a tape recorder.\n\nMost frameworks such as TensorFlow, Theano, Caffe, and CNTK have a static view of the world.\nOne has to build a neural network and reuse the same structure again and again.\nChanging the way the network behaves means that one has to start from scratch.\n\nWith PyTorch, we use a technique called reverse-mode auto-differentiation, which allows you to\nchange the way your network behaves arbitrarily with zero lag or overhead. Our inspiration comes\nfrom several research papers on this topic, as well as current and past work such as\n[torch-autograd](https://github.com/twitter/torch-autograd),\n[autograd](https://github.com/HIPS/autograd),\n[Chainer](https://chainer.org), etc.\n\nWhile this technique is not unique to PyTorch, it's one of the fastest implementations of it to date.\nYou get the best of speed and flexibility for your crazy research.\n\n![Dynamic graph](https://github.com/pytorch/pytorch/raw/main/docs/source/_static/img/dynamic_graph.gif)\n\n### Python First\n\nPyTorch is not a Python binding into a monolithic C++ framework.\nIt is built to be deeply integrated into Python.\nYou can use it naturally like you would use [NumPy](https://www.numpy.org/) / [SciPy](https://www.scipy.org/) / [scikit-learn](https://scikit-learn.org) etc.\nYou can write your new neural network layers in Python itself, using your favorite libraries\nand use packages such as [Cython](https://cython.org/) and [Numba](http://numba.pydata.org/).\nOur goal is to not reinvent the wheel where appropriate.\n\n### Imperative Experiences\n\nPyTorch is designed to be intuitive, linear in thought, and easy to use.\nWhen you execute a line of code, it gets executed. There isn't an asynchronous view of the world.\nWhen you drop into a debugger or receive error messages and stack traces, understanding them is straightforward.\nThe stack trace points to exactly where your code was defined.\nWe hope you never spend hours debugging your code because of bad stack traces or asynchronous and opaque execution engines.\n\n### Fast and Lean\n\nPyTorch has minimal framework overhead. We integrate acceleration libraries\nsuch as [Intel MKL](https://software.intel.com/mkl) and NVIDIA ([cuDNN](https://developer.nvidia.com/cudnn), [NCCL](https://developer.nvidia.com/nccl)) to maximize speed.\nAt the core, its CPU and GPU Tensor and neural network backends\nare mature and have been tested for years.\n\nHence, PyTorch is quite fast — whether you run small or large neural networks.\n\nThe memory usage in PyTorch is extremely efficient compared to Torch or some of the alternatives.\nWe've written custom memory allocators for the GPU to make sure that\nyour deep learning models are maximally memory efficient.\nThis enables you to train bigger deep learning models than before.\n\n### Extensions Without Pain\n\nWriting new neural network modules, or interfacing with PyTorch's Tensor API was designed to be straightforward\nand with minimal abstractions.\n\nYou can write new neural network layers in Python using the torch API\n[or your favorite NumPy-based libraries such as SciPy](https://pytorch.org/tutorials/advanced/numpy_extensions_tutorial.html).\n\nIf you want to write your layers in C/C++, we provide a convenient extension API that is efficient and with minimal boilerplate.\nNo wrapper code needs to be written. You can see [a tutorial here](https://pytorch.org/tutorials/advanced/cpp_extension.html) and [an example here](https://github.com/pytorch/extension-cpp).\n\n\n## Installation\n\n### Binaries\nCommands to install binaries via Conda or pip wheels are on our website: [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)\n\n\n#### NVIDIA Jetson Platforms\n\nPython wheels for NVIDIA's Jetson Nano, Jetson TX1/TX2, Jetson Xavier NX/AGX, and Jetson AGX Orin are provided [here](https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048) and the L4T container is published [here](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-pytorch)\n\nThey require JetPack 4.2 and above, and [@dusty-nv](https://github.com/dusty-nv) and [@ptrblck](https://github.com/ptrblck) are maintaining them.\n\n\n### From Source\n\n#### Prerequisites\nIf you are installing from source, you will need:\n- Python 3.10 or later\n- A compiler that fully supports C++17, such as clang or gcc (gcc 9.4.0 or newer is required, on Linux)\n- Visual Studio or Visual Studio Build Tool (Windows only)\n\n\\* PyTorch CI uses Visual C++ BuildTools, which come with Visual Studio Enterprise,\nProfessional, or Community Editions. You can also install the build tools from\nhttps://visualstudio.microsoft.com/visual-cpp-build-tools/. The build tools *do not*\ncome with Visual Studio Code by default.\n\nAn example of environment setup is shown below:\n\n* Linux:\n\n```bash\n$ source <CONDA_INSTALL_DIR>/bin/activate\n$ conda create -y -n <CONDA_NAME>\n$ conda activate <CONDA_NAME>\n```\n\n* Windows:\n\n```bash\n$ source <CONDA_INSTALL_DIR>\\Scripts\\activate.bat\n$ conda create -y -n <CONDA_NAME>\n$ conda activate <CONDA_NAME>\n$ call \"C:\\Program Files\\Microsoft Visual Studio\\<VERSION>\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64\n```\n\nA conda environment is not required.  You can also do a PyTorch build in a\nstandard virtual environment, e.g., created with tools like `uv`, provided\nyour system has installed all the necessary dependencies unavailable as pip\npackages (e.g., CUDA, MKL.)\n\n##### NVIDIA CUDA Support\nIf you want to compile with CUDA support, [select a supported version of CUDA from our support matrix](https://pytorch.org/get-started/locally/), then install the following:\n- [NVIDIA CUDA](https://developer.nvidia.com/cuda-downloads)\n- [NVIDIA cuDNN](https://developer.nvidia.com/cudnn) v8.5 or above\n- [Compiler](https://gist.github.com/ax3l/9489132) compatible with CUDA\n\nNote: You could refer to the [cuDNN Support Matrix](https://docs.nvidia.com/deeplearning/cudnn/backend/latest/reference/support-matrix.html) for cuDNN versions with the various supported CUDA, CUDA driver, and NVIDIA hardware.\n\nIf you want to disable CUDA support, export the environment variable `USE_CUDA=0`.\nOther potentially useful environment variables may be found in `setup.py`.  If\nCUDA is installed in a non-standard location, set PATH so that the nvcc you\nwant to use can be found (e.g., `export PATH=/usr/local/cuda-12.8/bin:$PATH`).\n\nIf you are building for NVIDIA's Jetson platforms (Jetson Nano, TX1, TX2, AGX Xavier), Instructions to install PyTorch for Jetson Nano are [available here](https://devtalk.nvidia.com/default/topic/1049071/jetson-nano/pytorch-for-jetson-nano/)\n\n##### AMD ROCm Support\nIf you want to compile with ROCm support, install\n- [AMD ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/quick_start.html) 4.0 and above installation\n- ROCm is currently supported only for Linux systems.\n\nBy default the build system expects ROCm to be installed in `/opt/rocm`. If ROCm is installed in a different directory, the `ROCM_PATH` environment variable must be set to the ROCm installation directory. The build system automatically detects the AMD GPU architecture. Optionally, the AMD GPU architecture can be explicitly set with the `PYTORCH_ROCM_ARCH` environment variable [AMD GPU architecture](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html#supported-gpus)\n\nIf you want to disable ROCm support, export the environment variable `USE_ROCM=0`.\nOther potentially useful environment variables may be found in `setup.py`.\n\n##### Intel GPU Support\nIf you want to compile with Intel GPU support, follow these\n- [PyTorch Prerequisites for Intel GPUs](https://www.intel.com/content/www/us/en/developer/articles/tool/pytorch-prerequisites-for-intel-gpus.html) instructions.\n- Intel GPU is supported for Linux and Windows.\n\nIf you want to disable Intel GPU support, export the environment variable `USE_XPU=0`.\nOther potentially useful environment variables may be found in `setup.py`.\n\n#### Get the PyTorch Source\n\n```bash\ngit clone https://github.com/pytorch/pytorch\ncd pytorch\n# if you are updating an existing checkout\ngit submodule sync\ngit submodule update --init --recursive\n```\n\n#### Install Dependencies\n\n**Common**\n\n```bash\n# Run this command from the PyTorch directory after cloning the source code using the “Get the PyTorch Source“ section above\npip install --group dev\n```\n\n**On Linux**\n\n```bash\npip install mkl-static mkl-include\n# CUDA only: Add LAPACK support for the GPU if needed\n# magma installation: run with active conda environment. specify CUDA version to install\n.ci/docker/common/install_magma_conda.sh 12.4\n\n# (optional) If using torch.compile with inductor/triton, install the matching version of triton\n# Run from the pytorch directory after cloning\n# For Intel GPU support, please explicitly `export USE_XPU=1` before running command.\nmake triton\n```\n\n**On MacOS**\n\n```bash\n# Add this package on intel x86 processor machines only\npip install mkl-static mkl-include\n# Add these packages if torch.distributed is needed\nconda install pkg-config libuv\n```\n\n**On Windows**\n\n```bash\npip install mkl-static mkl-include\n# Add these packages if torch.distributed is needed.\n# Distributed package support on Windows is a prototype feature and is subject to changes.\nconda install -c conda-forge libuv=1.51\n```\n\n#### Install PyTorch\n\n**On Linux**\n\nIf you're compiling for AMD ROCm then first run this command:\n\n```bash\n# Only run this if you're compiling for ROCm\npython tools/amd_build/build_amd.py\n```\n\nInstall PyTorch\n\n```bash\n# the CMake prefix for conda environment\nexport CMAKE_PREFIX_PATH=\"${CONDA_PREFIX:-'$(dirname $(which conda))/../'}:${CMAKE_PREFIX_PATH}\"\npython -m pip install --no-build-isolation -v -e .\n\n# the CMake prefix for non-conda environment, e.g. Python venv\n# call following after activating the venv\nexport CMAKE_PREFIX_PATH=\"${VIRTUAL_ENV}:${CMAKE_PREFIX_PATH}\"\n```\n\n**On macOS**\n\n```bash\npython -m pip install --no-build-isolation -v -e .\n```\n\n**On Windows**\n\nIf you want to build legacy python code, please refer to [Building on legacy code and CUDA](https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md#building-on-legacy-code-and-cuda)\n\n**CPU-only builds**\n\nIn this mode PyTorch computations will run on your CPU, not your GPU.\n\n```cmd\npython -m pip install --no-build-isolation -v -e .\n```\n\nNote on OpenMP: The desired OpenMP implementation is Intel OpenMP (iomp). In order to link against iomp, you'll need to manually download the library and set up the building environment by tweaking `CMAKE_INCLUDE_PATH` and `LIB`. The instruction [here](https://github.com/pytorch/pytorch/blob/main/docs/source/notes/windows.rst#building-from-source) is an example for setting up both MKL and Intel OpenMP. Without these configurations for CMake, Microsoft Visual C OpenMP runtime (vcomp) will be used.\n\n**CUDA based build**\n\nIn this mode PyTorch computations will leverage your GPU via CUDA for faster number crunching\n\n[NVTX](https://docs.nvidia.com/gameworks/content/gameworkslibrary/nvtx/nvidia_tools_extension_library_nvtx.htm) is needed to build Pytorch with CUDA.\nNVTX is a part of CUDA distributive, where it is called \"Nsight Compute\". To install it onto an already installed CUDA run CUDA installation once again and check the corresponding checkbox.\nMake sure that CUDA with Nsight Compute is installed after Visual Studio.\n\nCurrently, VS 2017 / 2019, and Ninja are supported as the generator of CMake. If `ninja.exe` is detected in `PATH`, then Ninja will be used as the default generator, otherwise, it will use VS 2017 / 2019.\n<br/> If Ninja is selected as the generator, the latest MSVC will get selected as the underlying toolchain.\n\nAdditional libraries such as\n[Magma](https://developer.nvidia.com/magma), [oneDNN, a.k.a. MKLDNN or DNNL](https://github.com/oneapi-src/oneDNN), and [Sccache](https://github.com/mozilla/sccache) are often needed. Please refer to the [installation-helper](https://github.com/pytorch/pytorch/tree/main/.ci/pytorch/win-test-helpers/installation-helpers) to install them.\n\nYou can refer to the [build_pytorch.bat](https://github.com/pytorch/pytorch/blob/main/.ci/pytorch/win-test-helpers/build_pytorch.bat) script for some other environment variables configurations\n\n```cmd\ncmd\n\n:: Set the environment variables after you have downloaded and unzipped the mkl package,\n:: else CMake would throw an error as `Could NOT find OpenMP`.\nset CMAKE_INCLUDE_PATH={Your directory}\\mkl\\include\nset LIB={Your directory}\\mkl\\lib;%LIB%\n\n:: Read the content in the previous section carefully before you proceed.\n:: [Optional] If you want to override the underlying toolset used by Ninja and Visual Studio with CUDA, please run the following script block.\n:: \"Visual Studio 2019 Developer Command Prompt\" will be run automatically.\n:: Make sure you have CMake >= 3.12 before you do this when you use the Visual Studio generator.\nset CMAKE_GENERATOR_TOOLSET_VERSION=14.27\nset DISTUTILS_USE_SDK=1\nfor /f \"usebackq tokens=*\" %i in (`\"%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe\" -version [15^,17^) -products * -latest -property installationPath`) do call \"%i\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 -vcvars_ver=%CMAKE_GENERATOR_TOOLSET_VERSION%\n\n:: [Optional] If you want to override the CUDA host compiler\nset CUDAHOSTCXX=C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.27.29110\\bin\\HostX64\\x64\\cl.exe\n\npython -m pip install --no-build-isolation -v -e .\n```\n\n**Intel GPU builds**\n\nIn this mode PyTorch with Intel GPU support will be built.\n\nPlease make sure [the common prerequisites](#prerequisites) as well as [the prerequisites for Intel GPU](#intel-gpu-support) are properly installed and the environment variables are configured prior to starting the build. For build tool support, `Visual Studio 2022` is required.\n\nThen PyTorch can be built with the command:\n\n```cmd\n:: CMD Commands:\n:: Set the CMAKE_PREFIX_PATH to help find corresponding packages\n:: %CONDA_PREFIX% only works after `conda activate custom_env`\n\nif defined CMAKE_PREFIX_PATH (\n    set \"CMAKE_PREFIX_PATH=%CONDA_PREFIX%\\Library;%CMAKE_PREFIX_PATH%\"\n) else (\n    set \"CMAKE_PREFIX_PATH=%CONDA_PREFIX%\\Library\"\n)\n\npython -m pip install --no-build-isolation -v -e .\n```\n\n##### Adjust Build Options (Optional)\n\nYou can adjust the configuration of cmake variables optionally (without building first), by doing\nthe following. For example, adjusting the pre-detected directories for CuDNN or BLAS can be done\nwith such a step.\n\nOn Linux\n\n```bash\nexport CMAKE_PREFIX_PATH=\"${CONDA_PREFIX:-'$(dirname $(which conda))/../'}:${CMAKE_PREFIX_PATH}\"\nCMAKE_ONLY=1 python setup.py build\nccmake build  # or cmake-gui build\n```\n\nOn macOS\n\n```bash\nexport CMAKE_PREFIX_PATH=\"${CONDA_PREFIX:-'$(dirname $(which conda))/../'}:${CMAKE_PREFIX_PATH}\"\nMACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_ONLY=1 python setup.py build\nccmake build  # or cmake-gui build\n```\n\n### Docker Image\n\n#### Using pre-built images\n\nYou can also pull a pre-built docker image from Docker Hub and run with docker v19.03+\n\n```bash\ndocker run --gpus all --rm -ti --ipc=host pytorch/pytorch:latest\n```\n\nPlease note that PyTorch uses shared memory to share data between processes, so if torch multiprocessing is used (e.g.\nfor multithreaded data loaders) the default shared memory segment size that container runs with is not enough, and you\nshould increase shared memory size either with `--ipc=host` or `--shm-size` command line options to `nvidia-docker run`.\n\n#### Building the image yourself\n\n**NOTE:** Must be built with a docker version > 18.06\n\nThe `Dockerfile` is supplied to build images with CUDA 11.1 support and cuDNN v8.\nYou can pass `PYTHON_VERSION=x.y` make variable to specify which Python version is to be used by Miniconda, or leave it\nunset to use the default.\n\n```bash\nmake -f docker.Makefile\n# images are tagged as docker.io/${your_docker_username}/pytorch\n```\n\nYou can also pass the `CMAKE_VARS=\"...\"` environment variable to specify additional CMake variables to be passed to CMake during the build.\nSee [setup.py](./setup.py) for the list of available variables.\n\n```bash\nmake -f docker.Makefile\n```\n\n### Building the Documentation\n\nTo build documentation in various formats, you will need [Sphinx](http://www.sphinx-doc.org)\nand the pytorch_sphinx_theme2.\n\nBefore you build the documentation locally, ensure `torch` is\ninstalled in your environment. For small fixes, you can install the\nnightly version as described in [Getting Started](https://pytorch.org/get-started/locally/).\n\nFor more complex fixes, such as adding a new module and docstrings for\nthe new module, you might need to install torch [from source](#from-source).\nSee [Docstring Guidelines](https://github.com/pytorch/pytorch/wiki/Docstring-Guidelines)\nfor docstring conventions.\n\n```bash\ncd docs/\npip install -r requirements.txt\nmake html\nmake serve\n```\n\nRun `make` to get a list of all available output formats.\n\nIf you get a katex error run `npm install katex`.  If it persists, try\n`npm install -g katex`\n\n> [!NOTE]\n> If you installed `nodejs` with a different package manager (e.g.,\n> `conda`) then `npm` will probably install a version of `katex` that is not\n> compatible with your version of `nodejs` and doc builds will fail.\n> A combination of versions that is known to work is `node@6.13.1` and\n> `katex@0.13.18`. To install the latter with `npm` you can run\n> ```npm install -g katex@0.13.18```\n\n> [!NOTE]\n> If you see a numpy incompatibility error, run:\n> ```\n> pip install 'numpy<2'\n> ```\n\nWhen you make changes to the dependencies run by CI, edit the\n`.ci/docker/requirements-docs.txt` file.\n\n#### Building a PDF\n\nTo compile a PDF of all PyTorch documentation, ensure you have\n`texlive` and LaTeX installed. On macOS, you can install them using:\n\n```\nbrew install --cask mactex\n```\n\nTo create the PDF:\n\n1. Run:\n\n   ```\n   make latexpdf\n   ```\n\n   This will generate the necessary files in the `build/latex` directory.\n\n2. Navigate to this directory and execute:\n\n   ```\n   make LATEXOPTS=\"-interaction=nonstopmode\"\n   ```\n\n   This will produce a `pytorch.pdf` with the desired content. Run this\n   command one more time so that it generates the correct table\n   of contents and index.\n\n> [!NOTE]\n> To view the Table of Contents, switch to the **Table of Contents**\n> view in your PDF viewer.\n\n\n### Previous Versions\n\nInstallation instructions and binaries for previous PyTorch versions may be found\non [our website](https://pytorch.org/get-started/previous-versions).\n\n\n## Getting Started\n\nThree pointers to get you started:\n- [Tutorials: get you started with understanding and using PyTorch](https://pytorch.org/tutorials/)\n- [Examples: easy to understand PyTorch code across all domains](https://github.com/pytorch/examples)\n- [The API Reference](https://pytorch.org/docs/)\n- [Glossary](https://github.com/pytorch/pytorch/blob/main/GLOSSARY.md)\n\n## Resources\n\n* [PyTorch.org](https://pytorch.org/)\n* [PyTorch Tutorials](https://pytorch.org/tutorials/)\n* [PyTorch Examples](https://github.com/pytorch/examples)\n* [PyTorch Models](https://pytorch.org/hub/)\n* [Intro to Deep Learning with PyTorch from Udacity](https://www.udacity.com/course/deep-learning-pytorch--ud188)\n* [Intro to Machine Learning with PyTorch from Udacity](https://www.udacity.com/course/intro-to-machine-learning-nanodegree--nd229)\n* [Deep Neural Networks with PyTorch from Coursera](https://www.coursera.org/learn/deep-neural-networks-with-pytorch)\n* [PyTorch Twitter](https://twitter.com/PyTorch)\n* [PyTorch Blog](https://pytorch.org/blog/)\n* [PyTorch YouTube](https://www.youtube.com/channel/UCWXI5YeOsh03QvJ59PMaXFw)\n\n## Communication\n* Forums: Discuss implementations, research, etc. https://discuss.pytorch.org\n* GitHub Issues: Bug reports, feature requests, install issues, RFCs, thoughts, etc.\n* Slack: The [PyTorch Slack](https://pytorch.slack.com/) hosts a primary audience of moderate to experienced PyTorch users and developers for general chat, online discussions, collaboration, etc. If you are a beginner looking for help, the primary medium is [PyTorch Forums](https://discuss.pytorch.org). If you need a slack invite, please fill this form: https://goo.gl/forms/PP1AGvNHpSaJP8to1\n* Newsletter: No-noise, a one-way email newsletter with important announcements about PyTorch. You can sign-up here: https://eepurl.com/cbG0rv\n* Facebook Page: Important announcements about PyTorch. https://www.facebook.com/pytorch\n* For brand guidelines, please visit our website at [pytorch.org](https://pytorch.org/)\n\n## Releases and Contributing\n\nTypically, PyTorch has three minor releases a year. Please let us know if you encounter a bug by [filing an issue](https://github.com/pytorch/pytorch/issues).\n\nWe appreciate all contributions. If you are planning to contribute back bug-fixes, please do so without any further discussion.\n\nIf you plan to contribute new features, utility functions, or extensions to the core, please first open an issue and discuss the feature with us.\nSending a PR without discussion might end up resulting in a rejected PR because we might be taking the core in a different direction than you might be aware of.\n\nTo learn more about making a contribution to Pytorch, please see our [Contribution page](CONTRIBUTING.md). For more information about PyTorch releases, see [Release page](RELEASE.md).\n\n## The Team\n\nPyTorch is a community-driven project with several skillful engineers and researchers contributing to it.\n\nPyTorch is currently maintained by [Soumith Chintala](http://soumith.ch), [Gregory Chanan](https://github.com/gchanan), [Dmytro Dzhulgakov](https://github.com/dzhulgakov), [Edward Yang](https://github.com/ezyang), [Alban Desmaison](https://github.com/albanD), [Piotr Bialecki](https://github.com/ptrblck) and [Nikita Shulga](https://github.com/malfet) with major contributions coming from hundreds of talented individuals in various forms and means.\nA non-exhaustive but growing list needs to mention: [Trevor Killeen](https://github.com/killeent), [Sasank Chilamkurthy](https://github.com/chsasank), [Sergey Zagoruyko](https://github.com/szagoruyko), [Adam Lerer](https://github.com/adamlerer), [Francisco Massa](https://github.com/fmassa), [Alykhan Tejani](https://github.com/alykhantejani), [Luca Antiga](https://github.com/lantiga), [Alban Desmaison](https://github.com/albanD), [Andreas Koepf](https://github.com/andreaskoepf), [James Bradbury](https://github.com/jekbradbury), [Zeming Lin](https://github.com/ebetica), [Yuandong Tian](https://github.com/yuandong-tian), [Guillaume Lample](https://github.com/glample), [Marat Dukhan](https://github.com/Maratyszcza), [Natalia Gimelshein](https://github.com/ngimel), [Christian Sarofeen](https://github.com/csarofeen), [Martin Raison](https://github.com/martinraison), [Edward Yang](https://github.com/ezyang), [Zachary Devito](https://github.com/zdevito). <!-- codespell:ignore -->\n\nNote: This project is unrelated to [hughperkins/pytorch](https://github.com/hughperkins/pytorch) with the same name. Hugh is a valuable contributor to the Torch community and has helped with many things Torch and PyTorch.\n\n## License\n\nPyTorch has a BSD-style license, as found in the [LICENSE](LICENSE) file.\n",
+        "description_content_type": "text/markdown",
+        "keywords": [
+          "pytorch",
+          "machine learning"
+        ],
+        "author_email": "PyTorch Team <packages@pytorch.org>",
+        "license": "BSD-3-Clause",
+        "license_file": [
+          "LICENSE",
+          "NOTICE"
+        ],
+        "classifier": [
+          "Development Status :: 5 - Production/Stable",
+          "Intended Audience :: Developers",
+          "Intended Audience :: Education",
+          "Intended Audience :: Science/Research",
+          "Topic :: Scientific/Engineering",
+          "Topic :: Scientific/Engineering :: Mathematics",
+          "Topic :: Scientific/Engineering :: Artificial Intelligence",
+          "Topic :: Software Development",
+          "Topic :: Software Development :: Libraries",
+          "Topic :: Software Development :: Libraries :: Python Modules",
+          "Programming Language :: C++",
+          "Programming Language :: Python :: 3 :: Only",
+          "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3.12",
+          "Programming Language :: Python :: 3.13",
+          "Programming Language :: Python :: 3.14"
+        ],
+        "requires_dist": [
+          "filelock",
+          "typing-extensions>=4.10.0",
+          "setuptools; python_version >= \"3.12\"",
+          "sympy>=1.13.3",
+          "networkx>=2.5.1",
+          "jinja2",
+          "fsspec>=0.8.5",
+          "cuda-bindings==12.9.4; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cuda-nvrtc-cu12==12.8.93; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cuda-runtime-cu12==12.8.90; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cuda-cupti-cu12==12.8.90; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cudnn-cu12==9.10.2.21; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cublas-cu12==12.8.4.1; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cufft-cu12==11.3.3.83; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-curand-cu12==10.3.9.90; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cusolver-cu12==11.7.3.90; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cusparse-cu12==12.5.8.93; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cusparselt-cu12==0.7.1; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-nccl-cu12==2.27.5; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-nvshmem-cu12==3.4.5; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-nvtx-cu12==12.8.90; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-nvjitlink-cu12==12.8.93; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "nvidia-cufile-cu12==1.13.1.3; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "triton==3.6.0; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
+          "optree>=0.13.0; extra == \"optree\"",
+          "opt-einsum>=3.3; extra == \"opt-einsum\"",
+          "pyyaml; extra == \"pyyaml\""
+        ],
+        "requires_python": ">=3.10",
+        "project_url": [
+          "Homepage, https://pytorch.org",
+          "Repository, https://github.com/pytorch/pytorch",
+          "Documentation, https://pytorch.org/docs",
+          "Issue Tracker, https://github.com/pytorch/pytorch/issues",
+          "Forum, https://discuss.pytorch.org"
+        ],
+        "provides_extra": [
+          "optree",
+          "opt-einsum",
+          "pyyaml"
+        ]
+      }
+    }
+  ],
+  "environment": {
+    "implementation_name": "cpython",
+    "implementation_version": "3.12.3",
+    "os_name": "posix",
+    "platform_machine": "aarch64",
+    "platform_release": "6.17.0-1029-nvidia",
+    "platform_system": "Linux",
+    "platform_version": "#29-Ubuntu SMP PREEMPT_DYNAMIC Wed Jul  1 00:13:52 UTC 2026",
+    "python_full_version": "3.12.3",
+    "platform_python_implementation": "CPython",
+    "python_version": "3.12",
+    "sys_platform": "linux"
+  }
+}

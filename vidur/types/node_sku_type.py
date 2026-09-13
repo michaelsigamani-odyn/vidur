@@ -7,4 +7,3 @@ class NodeSKUType(BaseIntEnum):
     H100_PAIRWISE_NVLINK = 3
     A100_DGX = 4
     H100_DGX = 5
-    RADEON_PRO_W7900_SINGLE = 6

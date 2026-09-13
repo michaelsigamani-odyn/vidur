@@ -212,3 +212,21 @@ class Qwen72BModelConfig(QwenModelConfig):
     @staticmethod
     def get_name():
         return "Qwen/Qwen-72B"
+
+
+@dataclass
+class Qwen3_8BModelConfig(QwenModelConfig):
+    # Source: https://huggingface.co/Qwen/Qwen3-8B/blob/main/config.json
+    num_layers: int = 36
+    num_q_heads: int = 32
+    num_kv_heads: int = 8
+    embedding_dim: int = 4096
+    mlp_hidden_dim: int = 12288
+    max_position_embeddings: int = 40960
+    use_qkv_bias: bool = False
+    rope_theta: Optional[float] = 1000000
+    vocab_size: int = 151936
+
+    @staticmethod
+    def get_name():
+        return "Qwen/Qwen3-8B"

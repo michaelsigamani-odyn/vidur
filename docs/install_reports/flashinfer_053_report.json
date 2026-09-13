@@ -1,0 +1,68 @@
+{
+  "version": "1",
+  "pip_version": "26.2.1",
+  "install": [
+    {
+      "download_info": {
+        "url": "https://files.pythonhosted.org/packages/76/78/6dc7e7da8cb87c9965644ea0d2439457a1bc9256c45ceda0044595be4143/flashinfer_python-0.5.3-py3-none-any.whl",
+        "archive_info": {
+          "hashes": {
+            "sha256": "b601293b72f9138bad173edc28df84b9f239a013be974e2e79d4ba98aeb38cf5"
+          },
+          "hash": "sha256=b601293b72f9138bad173edc28df84b9f239a013be974e2e79d4ba98aeb38cf5"
+        }
+      },
+      "is_direct": false,
+      "is_yanked": false,
+      "requested": true,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "flashinfer-python",
+        "version": "0.5.3",
+        "dynamic": [
+          "license-file"
+        ],
+        "summary": "FlashInfer: Kernel Library for LLM Serving",
+        "description": "<p align=\"center\">\n  <picture>\n    <source media=\"(prefers-color-scheme: dark)\" srcset=\"https://github.com/flashinfer-ai/web-data/blob/main/logo/FlashInfer-black-background.png?raw=true\">\n    <img alt=\"FlashInfer\" src=\"https://github.com/flashinfer-ai/web-data/blob/main/logo/FlashInfer-white-background.png?raw=true\" width=55%>\n  </picture>\n</p>\n<h1 align=\"center\">\nKernel Library for LLM Serving\n</h1>\n\n<p align=\"center\">\n| <a href=\"https://flashinfer.ai\"><b>Blog</b></a> | <a href=\"https://docs.flashinfer.ai\"><b>Documentation</b></a> | <a href=\"https://join.slack.com/t/flashinfer/shared_invite/zt-379wct3hc-D5jR~1ZKQcU00WHsXhgvtA\"><b>Slack</b></a> |  <a href=\"https://github.com/orgs/flashinfer-ai/discussions\"><b>Discussion Forum</b></a> |\n</p>\n\n[![Build Status](https://ci.tlcpack.ai/job/flashinfer-ci/job/main/badge/icon)](https://ci.tlcpack.ai/job/flashinfer-ci/job/main/)\n[![Documentation](https://github.com/flashinfer-ai/flashinfer/actions/workflows/build-doc.yml/badge.svg)](https://github.com/flashinfer-ai/flashinfer/actions/workflows/build-doc.yml)\n\nFlashInfer is a library and kernel generator for Large Language Models that provides high-performance implementation of LLM GPU kernels such as FlashAttention, SparseAttention, PageAttention, Sampling, and more. FlashInfer focuses on LLM serving and inference, and delivers state-of-the-art performance across diverse scenarios.\n\nCheck our [v0.2 release blog](https://flashinfer.ai/2024/12/16/flashinfer-v02-release.html) for new features!\n\nThe core features of FlashInfer include:\n\n1. **Efficient Sparse/Dense Attention Kernels**: Efficient single/batch attention for sparse(paged)/dense KV-storage on CUDA Cores and Tensor Cores (both FA2 & FA3) templates. The vector-sparse attention can achieve 90% of the bandwidth of dense kernels with same problem size.\n2. **Load-Balanced Scheduling**: FlashInfer decouples `plan`/`run` stage of attention computation where we schedule the computation of variable-length inputs in `plan` stage to alleviate load-imbalance issue.\n3. **Memory Efficiency**: FlashInfer offers [Cascade Attention](https://docs.flashinfer.ai/api/cascade.html#flashinfer.cascade.MultiLevelCascadeAttentionWrapper) for hierarchical KV-Cache, and implements Head-Query fusion for accelerating Grouped-Query Attention, and efficient kernels for low-precision attention and fused-RoPE attention for compressed KV-Cache.\n4. **Customizable Attention**: Bring your own attention variants through JIT-compilation.\n5. **CUDAGraph and torch.compile Compatibility**: FlashInfer kernels can be captured by CUDAGraphs and torch.compile for low-latency inference.\n6. **Efficient LLM-specific Operators**: High-Performance [fused kernel for Top-P, Top-K/Min-P sampling](https://docs.flashinfer.ai/api/sampling.html) without the need to sorting.\n\nFlashInfer supports PyTorch, TVM and C++ (header-only) APIs, and can be easily integrated into existing projects.\n\n## News\n\n- [Mar 10, 2025] [Blog Post](https://flashinfer.ai/2025/03/10/sampling.html) Sorting-Free GPU Kernels for LLM Sampling, which explains the design of sampling kernels in FlashInfer.\n- [Mar 1, 2025] Checkout flashinfer's [intra-kernel profiler](https://github.com/flashinfer-ai/flashinfer/tree/main/profiler) for visualizing the timeline of each threadblock in GPU kernels.\n- [Dec 16, 2024] [Blog Post](https://flashinfer.ai/2024/12/16/flashinfer-v02-release.html) FlashInfer 0.2 - Efficient and Customizable Kernels for LLM Inference Serving\n- [Sept 2024] We've launched a [Slack](https://join.slack.com/t/flashinfer/shared_invite/zt-2r93kj2aq-wZnC2n_Z2~mf73N5qnVGGA) workspace for Flashinfer users and developers. Join us for timely support, discussions, updates and knowledge sharing!\n- [Jan 31, 2024] [Blog Post](https://flashinfer.ai/2024/01/08/cascade-inference.html) Cascade Inference: Memory-Efficient Shared Prefix Batch Decoding\n- [Jan 31, 2024] [Blog Post](https://flashinfer.ai/2024/01/03/introduce-flashinfer.html) Accelerating Self-Attentions for LLM Serving with FlashInfer\n\n## Getting Started\n\nUsing our PyTorch API is the easiest way to get started:\n\n### Install from PyPI\n\nFlashInfer is available as a Python package for Linux. Install the core package with:\n\n```bash\npip install flashinfer-python\n```\n\n**Package Options:**\n\n- **flashinfer-python**: Core package that compiles/downloads kernels on first use\n- **flashinfer-cubin**: Pre-compiled kernel binaries for all supported GPU architectures\n- **flashinfer-jit-cache**: Pre-built kernel cache for specific CUDA versions\n\n**For faster initialization and offline usage**, install the optional packages to have most kernels pre-compiled:\n\n```bash\npip install flashinfer-python flashinfer-cubin\n# JIT cache package (replace cu129 with your CUDA version: cu128, cu129, or cu130)\npip install flashinfer-jit-cache --index-url https://flashinfer.ai/whl/cu129\n```\n\nThis eliminates compilation and downloading overhead at runtime.\n\n### Install from Source\n\nBuild the core package from source:\n\n```bash\ngit clone https://github.com/flashinfer-ai/flashinfer.git --recursive\ncd flashinfer\npython -m pip install -v .\n```\n\n**For development**, install in editable mode:\n\n```bash\npython -m pip install --no-build-isolation -e . -v\n```\n\n**Build optional packages:**\n\n`flashinfer-cubin`:\n\n```bash\ncd flashinfer-cubin\npython -m build --no-isolation --wheel\npython -m pip install dist/*.whl\n```\n\n`flashinfer-jit-cache` (customize `FLASHINFER_CUDA_ARCH_LIST` for your target GPUs):\n\n```bash\nexport FLASHINFER_CUDA_ARCH_LIST=\"7.5 8.0 8.9 9.0a 10.0a 10.3a 11.0a 12.0f\"\ncd flashinfer-jit-cache\npython -m build --no-isolation --wheel\npython -m pip install dist/*.whl\n```\n\nFor more details, see the [Install from Source documentation](https://docs.flashinfer.ai/installation.html#install-from-source).\n\n### Install Nightly Build\n\nNightly builds are available for testing the latest features:\n\n```bash\n# Core and cubin packages\npip install -U --pre flashinfer-python --index-url https://flashinfer.ai/whl/nightly/ --no-deps # Install the nightly package from custom index, without installing dependencies\npip install flashinfer-python  # Install flashinfer-python's dependencies from PyPI\npip install -U --pre flashinfer-cubin --index-url https://flashinfer.ai/whl/nightly/\n# JIT cache package (replace cu129 with your CUDA version: cu128, cu129, or cu130)\npip install -U --pre flashinfer-jit-cache --index-url https://flashinfer.ai/whl/nightly/cu129\n```\n\n### Verify Installation\n\nAfter installation, verify that FlashInfer is correctly installed and configured:\n\n```bash\nflashinfer show-config\n```\n\nThis command displays:\n\n- FlashInfer version and installed packages (flashinfer-python, flashinfer-cubin, flashinfer-jit-cache)\n- PyTorch and CUDA version information\n- Environment variables and artifact paths\n- Downloaded cubin status and module compilation status\n\n### Trying it out\n\nBelow is a minimal example of using FlashInfer's single-request decode/append/prefill attention kernels:\n\n```python\nimport torch\nimport flashinfer\n\nkv_len = 2048\nnum_kv_heads = 32\nhead_dim = 128\n\nk = torch.randn(kv_len, num_kv_heads, head_dim).half().to(0)\nv = torch.randn(kv_len, num_kv_heads, head_dim).half().to(0)\n\n# decode attention\n\nnum_qo_heads = 32\nq = torch.randn(num_qo_heads, head_dim).half().to(0)\n\no = flashinfer.single_decode_with_kv_cache(q, k, v) # decode attention without RoPE on-the-fly\no_rope_on_the_fly = flashinfer.single_decode_with_kv_cache(q, k, v, pos_encoding_mode=\"ROPE_LLAMA\") # decode with LLaMA style RoPE on-the-fly\n\n# append attention\nappend_qo_len = 128\nq = torch.randn(append_qo_len, num_qo_heads, head_dim).half().to(0) # append attention, the last 128 tokens in the KV-Cache are the new tokens\no = flashinfer.single_prefill_with_kv_cache(q, k, v, causal=True) # append attention without RoPE on-the-fly, apply causal mask\no_rope_on_the_fly = flashinfer.single_prefill_with_kv_cache(q, k, v, causal=True, pos_encoding_mode=\"ROPE_LLAMA\") # append attention with LLaMA style RoPE on-the-fly, apply causal mask\n\n# prefill attention\nqo_len = 2048\nq = torch.randn(qo_len, num_qo_heads, head_dim).half().to(0) # prefill attention\no = flashinfer.single_prefill_with_kv_cache(q, k, v, causal=False) # prefill attention without RoPE on-the-fly, do not apply causal mask\n```\n\nCheck out [documentation](https://docs.flashinfer.ai/) for usage of batch decode/append/prefill kernels and shared-prefix cascading kernels.\n\n## Custom Attention Variants\n\nStarting from FlashInfer v0.2, users can customize their own attention variants with additional parameters. For more details, refer to our [JIT examples](https://github.com/flashinfer-ai/flashinfer/blob/main/tests/utils/test_jit_example.py).\n\n## GPU Support\n\nFlashInfer currently provides support for NVIDIA SM architectures 75 and higher and beta support for 103, 110, 120, and 121.\n\n## Adoption\n\nWe are thrilled to share that FlashInfer is being adopted by many cutting-edge projects, including but not limited to:\n\n- [MLC-LLM](https://github.com/mlc-ai/mlc-llm)\n- [Punica](https://github.com/punica-ai/punica)\n- [SGLang](https://github.com/sgl-project/sglang)\n- [ScaleLLM](https://github.com/vectorch-ai/ScaleLLM)\n- [vLLM](https://github.com/vllm-project/vllm)\n- [TGI](https://github.com/huggingface/text-generation-inference)\n- [lorax](https://github.com/predibase/lorax)\n- [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)\n- [LightLLM](https://github.com/ModelTC/lightllm)\n\n## Acknowledgement\n\nFlashInfer is inspired by [FlashAttention 1&2](https://github.com/dao-AILab/flash-attention/), [vLLM](https://github.com/vllm-project/vllm), [stream-K](https://arxiv.org/abs/2301.03598), [cutlass](https://github.com/nvidia/cutlass) and [AITemplate](https://github.com/facebookincubator/AITemplate) projects.\n\n## Citation\n\nIf you find FlashInfer helpful in your project or research, please consider citing our [paper](https://arxiv.org/abs/2501.01005):\n\n```bibtex\n@article{ye2025flashinfer,\n    title = {FlashInfer: Efficient and Customizable Attention Engine for LLM Inference Serving},\n    author = {\n      Ye, Zihao and\n      Chen, Lequn and\n      Lai, Ruihang and\n      Lin, Wuwei and\n      Zhang, Yineng and\n      Wang, Stephanie and\n      Chen, Tianqi and\n      Kasikci, Baris and\n      Grover, Vinod and\n      Krishnamurthy, Arvind and\n      Ceze, Luis\n    },\n    journal = {arXiv preprint arXiv:2501.01005},\n    year = {2025},\n    url = {https://arxiv.org/abs/2501.01005}\n}\n```\n",
+        "description_content_type": "text/markdown",
+        "author": "FlashInfer team",
+        "license_expression": "Apache-2.0",
+        "license_file": [
+          "LICENSE"
+        ],
+        "requires_dist": [
+          "apache-tvm-ffi<0.2,>=0.1",
+          "click",
+          "einops",
+          "ninja",
+          "numpy",
+          "nvidia-cudnn-frontend>=1.13.0",
+          "nvidia-cutlass-dsl>=4.2.1",
+          "nvidia-ml-py",
+          "packaging>=24.2",
+          "requests",
+          "tabulate",
+          "torch",
+          "tqdm"
+        ],
+        "requires_python": "<4.0,>=3.10",
+        "project_url": [
+          "Homepage, https://github.com/flashinfer-ai/flashinfer"
+        ]
+      }
+    }
+  ],
+  "environment": {
+    "implementation_name": "cpython",
+    "implementation_version": "3.12.3",
+    "os_name": "posix",
+    "platform_machine": "aarch64",
+    "platform_release": "6.17.0-1029-nvidia",
+    "platform_system": "Linux",
+    "platform_version": "#29-Ubuntu SMP PREEMPT_DYNAMIC Wed Jul  1 00:13:52 UTC 2026",
+    "python_full_version": "3.12.3",
+    "platform_python_implementation": "CPython",
+    "python_version": "3.12",
+    "sys_platform": "linux"
+  }
+}

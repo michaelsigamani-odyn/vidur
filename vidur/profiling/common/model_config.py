@@ -2,6 +2,7 @@ from dataclasses import asdict
 from typing import Any, Dict, Optional
 
 import torch
+from sarathi.config import ParallelConfig
 
 from vidur.config.model_config import BaseModelConfig
 from vidur.types import ActivationType, NormType
@@ -65,10 +66,10 @@ class ModelConfig:
 
         return ModelConfig(model_name, **model_config_dict)
 
-    def get_num_q_heads(self, parallel_config: Any):
+    def get_num_q_heads(self, parallel_config: ParallelConfig):
         return self.num_q_heads // parallel_config.tensor_parallel_size
 
-    def get_num_kv_heads(self, parallel_config: Any):
+    def get_num_kv_heads(self, parallel_config: ParallelConfig):
         return self.num_kv_heads // parallel_config.tensor_parallel_size
 
     def get_head_size(self):
