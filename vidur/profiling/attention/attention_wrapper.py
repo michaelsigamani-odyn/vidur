@@ -1,20 +1,15 @@
 from math import ceil
+import time
 from typing import List
 
 import numpy as np
-import sarathi.metrics.cuda_timer
 import torch
 
+from vidur.profiling.common.accelerator import get_torch_device, synchronize_device
 from vidur.profiling.common.cuda_timer import CudaTimer
-
-# monkey patching the CudaTimer class to use the sarathi implementation
-sarathi.metrics.cuda_timer.CudaTimer = CudaTimer
-
-from sarathi.config import ParallelConfig
-from sarathi.model_executor.attention import (
-    AttentionBackend,
-    get_attention_wrapper,
-    set_attention_backend,
+from vidur.profiling.model_executor_backend import (
+    ParallelConfig,
+    create_model_executor_backend,
 )
 
 from vidur.profiling.attention.attention_input import AttentionInput
@@ -34,15 +29,16 @@ class AttentionWrapper:
         max_num_blocks: int,
         max_model_len: int,
         block_size: int,
-        attention_backend: AttentionBackend,
+        attention_backend: str,
         dtype: torch.dtype,
+        gpu_vendor: str,
     ):
         self.time_stats_store = TimerStatsStore(profile_method="kineto")
 
         self._model_config = model_config
         self._parallel_config = parallel_config
         self._dtype = dtype
-        self._device = torch.device("cuda")
+        self._device = get_torch_device()
 
         self._max_model_len = max_model_len
         self._n_worker_q_heads = self._model_config.get_num_q_heads(
@@ -55,18 +51,21 @@ class AttentionWrapper:
 
         self._block_size = block_size
 
+        self._model_executor_backend = create_model_executor_backend(gpu_vendor)
+        self._model_executor_backend.patch_cuda_timer(CudaTimer)
         self._attention_backend = attention_backend
-        set_attention_backend(attention_backend)
-        get_attention_wrapper().init(
+        self._is_first_profile_call = True
+        self._attention_wrapper = self._model_executor_backend.create_attention_wrapper(
             self._model_config,
             self._parallel_config,
             self._block_size,
             self._device,
+            self._attention_backend,
         )
         self._max_blocks_per_sequence = ceil(max_model_len / self._block_size)
         # We create (big) KV tensors and reuse them
         self.max_num_blocks = max_num_blocks
-        self.kv_cache = get_attention_wrapper().get_cache_block(
+        self.kv_cache = self._attention_wrapper.get_cache_block(
             self.max_num_blocks, dtype=self._dtype, device=self._device
         )
 
@@ -125,22 +124,36 @@ class AttentionWrapper:
         seq_metadata_list, query, key, value, kv_cache = self._get_input_tensors(
             attention_input,
         )
-        get_attention_wrapper().begin_forward(seq_metadata_list)
+        self._attention_wrapper.begin_forward(seq_metadata_list)
 
+        warmup_start = time.perf_counter()
         for _ in range(WARMUP_STEPS):
-            get_attention_wrapper().forward(query, key, value, kv_cache)
-        torch.cuda.synchronize()
+            self._attention_wrapper.forward(query, key, value, kv_cache)
+        synchronize_device()
+        warmup_wall_ms = (time.perf_counter() - warmup_start) * 1e3
 
         self.time_stats_store.clear_stats()
 
+        active_start = time.perf_counter()
         for _ in range(ACTIVE_STEPS):
-            get_attention_wrapper().forward(query, key, value, kv_cache)
-        torch.cuda.synchronize()
+            self._attention_wrapper.forward(query, key, value, kv_cache)
+        synchronize_device()
+        active_wall_ms = (time.perf_counter() - active_start) * 1e3
 
-        get_attention_wrapper().end_forward()
+        self._attention_wrapper.end_forward()
+
+        compile_warmup_wall_ms = warmup_wall_ms if self._is_first_profile_call else 0.0
+        self._is_first_profile_call = False
+        measured_kernel_wall_ms = active_wall_ms
+        measured_kernel_mean_ms = measured_kernel_wall_ms / ACTIVE_STEPS
 
         return {
             "time_stats": self.time_stats_store.get_stats(),
+            "compile_warmup_wall_ms": compile_warmup_wall_ms,
+            "warmup_wall_ms": warmup_wall_ms,
+            "measured_kernel_wall_ms": measured_kernel_wall_ms,
+            "measured_kernel_mean_ms": measured_kernel_mean_ms,
+            "active_steps": ACTIVE_STEPS,
             "n_embd": self._model_config.embedding_dim,
             "n_q_head": self._model_config.num_q_heads,
             "n_kv_head": self._model_config.num_kv_heads,

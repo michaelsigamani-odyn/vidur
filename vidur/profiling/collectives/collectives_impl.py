@@ -2,6 +2,8 @@ from typing import Callable
 
 import torch
 
+from vidur.profiling.common.accelerator import get_torch_device, synchronize_device
+
 WARMUP_STEPS = 5
 GRAPH_STEPS = 3
 
@@ -18,24 +20,25 @@ class GraphedCollective:
         self._size = size
         self._disable_graph = disable_graph
         self._collective_fn = self._get_collective_fn(collective)
+        self._device = get_torch_device()
 
         self._buffer = torch.empty(
             size=(size,),
             dtype=dtype,
-            device="cuda",
+            device=self._device,
         )
         self._gather_buffer = None
         if collective == "all_gather":
             self._gather_tensor = torch.empty(
                 size=(size * num_workers,),
                 dtype=dtype,
-                device="cuda",
+                device=self._device,
             )
         elif collective == "reduce_scatter":
             self._reduce_buffer = torch.empty(
                 size=(size * num_workers,),
                 dtype=dtype,
-                device="cuda",
+                device=self._device,
             )
 
         if not self._disable_graph:
@@ -78,7 +81,7 @@ class GraphedCollective:
         for _ in range(WARMUP_STEPS):
             self._collective_fn()
 
-        torch.cuda.synchronize()
+        synchronize_device()
 
         # Build graph.
         graph = torch.cuda.CUDAGraph()
@@ -92,7 +95,7 @@ class GraphedCollective:
                 for _ in range(GRAPH_STEPS):
                     self._collective_fn()
 
-        torch.cuda.synchronize()
+        synchronize_device()
         return graph
 
     def launch(self) -> torch.Tensor:

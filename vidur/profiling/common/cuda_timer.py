@@ -3,6 +3,10 @@ import time
 import torch
 from torch.profiler import record_function
 
+from vidur.profiling.common.accelerator import (
+    get_profiler_gpu_activity,
+    synchronize_device,
+)
 from vidur.profiling.common.timer_stats_store import TimerStatsStore
 from vidur.profiling.utils import ProfileMethod
 
@@ -11,7 +15,7 @@ class CudaTimer:
     def __init__(
         self,
         name,
-        layer_id: int = 0,  # we don't care about layer id, it is just for compatibility with sarathi cudatimer
+        layer_id: int = 0,  # retained for compatibility with backend timer wrappers
         aggregation_fn=sum,
         filter_str=None,
     ):
@@ -33,8 +37,11 @@ class CudaTimer:
         self.filter_str = filter_str
 
         if self.timer_stats_store.profile_method == ProfileMethod.KINETO:
+            gpu_activity = get_profiler_gpu_activity()
+            if gpu_activity is None:
+                raise RuntimeError("KINETO profiling requires a GPU runtime")
             self.profiler = torch.profiler.profile(
-                activities=[torch.profiler.ProfilerActivity.CUDA],
+                activities=[gpu_activity],
                 on_trace_ready=self.handle_trace,
             )
         else:
@@ -57,7 +64,7 @@ class CudaTimer:
         elif self.timer_stats_store.profile_method == ProfileMethod.KINETO:
             self.profiler.__enter__()
         elif self.timer_stats_store.profile_method == ProfileMethod.PERF_COUNTER:
-            torch.cuda.synchronize()
+            synchronize_device()
             self.start_time = time.perf_counter()
         else:
             raise ValueError(
@@ -91,7 +98,7 @@ class CudaTimer:
         elif self.timer_stats_store.profile_method == ProfileMethod.KINETO:
             self.profiler.__exit__(*args)
         elif self.timer_stats_store.profile_method == ProfileMethod.PERF_COUNTER:
-            torch.cuda.synchronize()
+            synchronize_device()
             self.end_time = time.perf_counter()
             self.timer_stats_store.record_time(
                 self.name, (self.end_time - self.start_time) * 1e3

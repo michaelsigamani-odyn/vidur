@@ -47,6 +47,18 @@ __Instructions on adding a new model to existing or new SKUs can be found [here]
 
 ## Setup
 
+### ROCm (AMD Radeon)
+
+Vidur supports AMD telemetry and profiling workflows through ROCm. For a reproducible version matrix (ROCm, PyTorch-ROCm, vLLM-ROCm, `amd-smi`) and end-to-end validation steps, see `docs/rocm_validation.md`.
+
+Quick profiling examples:
+
+```sh
+python vidur/profiling/mlp/main.py --models meta-llama/Llama-2-7b-hf --num_gpus 1 --gpu_vendor amd
+python vidur/profiling/attention/main.py --models meta-llama/Llama-2-7b-hf --num_gpus 1 --gpu_vendor amd --attention_backend triton
+python vidur/profiling/collectives/main.py --collective all_reduce --num_workers_per_node_combinations 1 --gpu_vendor amd
+```
+
 ### Using `mamba`
 
 To run the simulator, create a mamba environment with the given dependency file.
@@ -93,6 +105,15 @@ To run the simulator, execute the following command from the repository root,
 
 ```sh
 python -m vidur.main
+```
+
+AMD device example:
+
+```sh
+python -m vidur.main \
+  --replica_config_device radeon_pro_w7900 \
+  --replica_config_network_device radeon_pro_w7900_single \
+  --replica_config_model_name meta-llama/Llama-2-7b-hf
 ```
 
 or a big example with all the parameters,
@@ -165,4 +186,3 @@ trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
-

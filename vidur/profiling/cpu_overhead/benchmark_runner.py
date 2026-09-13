@@ -1,12 +1,12 @@
 import gc
 import time
+from typing import Any
 
 import numpy as np
-from sarathi import LLMEngine, SamplingParams
-from sarathi.metrics.constants import CpuOperationMetrics
 from tqdm import tqdm
 
 from vidur.logger import init_logger
+from vidur.profiling.model_executor_backend import SarathiBackend
 
 logger = init_logger(__name__)
 
@@ -29,8 +29,9 @@ class BenchmarkRunner:
         self._output_dir = output_dir
 
         self._config_name = f"{model_name}_{batch_size}_{tensor_parallel_degree}"
+        self._model_executor_backend = SarathiBackend()
 
-        self._llm_engine = LLMEngine.from_engine_args(
+        self._llm_engine = self._model_executor_backend.create_llm_engine_from_args(
             replica_id=0,
             # model config
             model=model_name,
@@ -48,9 +49,12 @@ class BenchmarkRunner:
             keep_individual_batch_metrics=False,
             trust_remote_code=True,
         )
+        self._cpu_operation_metrics_enum = (
+            self._model_executor_backend.get_cpu_operation_metrics_enum()
+        )
 
-    def _get_input_params(self) -> SamplingParams:
-        sampling_params = SamplingParams(
+    def _get_input_params(self) -> Any:
+        sampling_params = self._model_executor_backend.create_sampling_params(
             ignore_eos=True,
             max_tokens=self._batch_size * NUM_DECODE_TOKEN_AMPLIFICATION_FACTOR,
         )
@@ -128,16 +132,20 @@ class BenchmarkRunner:
         metrics = {**metrics_means, **metrics_medians}
 
         total_recorded_cpu_time = (
-            metric_store.cpu_operation_metrics[CpuOperationMetrics.SCHEDULE].sum
-            + metric_store.cpu_operation_metrics[
-                CpuOperationMetrics.PROCESS_MODEL_OUTPUTS
+            metric_store.cpu_operation_metrics[
+                self._cpu_operation_metrics_enum.SCHEDULE
             ].sum
             + metric_store.cpu_operation_metrics[
-                CpuOperationMetrics.MODEL_EXECUTION_E2E
+                self._cpu_operation_metrics_enum.PROCESS_MODEL_OUTPUTS
             ].sum
-            + metric_store.cpu_operation_metrics[CpuOperationMetrics.SAMPLER_E2E].sum
             + metric_store.cpu_operation_metrics[
-                CpuOperationMetrics.PREPARE_INPUTS_E2E
+                self._cpu_operation_metrics_enum.MODEL_EXECUTION_E2E
+            ].sum
+            + metric_store.cpu_operation_metrics[
+                self._cpu_operation_metrics_enum.SAMPLER_E2E
+            ].sum
+            + metric_store.cpu_operation_metrics[
+                self._cpu_operation_metrics_enum.PREPARE_INPUTS_E2E
             ].sum
         )
 

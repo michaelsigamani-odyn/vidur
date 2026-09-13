@@ -68,17 +68,21 @@ def prepare_subset_dfs(_args):
         "h100": 4.25,
         "a100": 2.21,
         "a40": 1.28,
+        "radeon_pro_w7900": 1.50,
     }
 
     NEW_GPU_COSTS = {
         "h100": 6.98,
         "a100": 3.72,
         "a40": 1.28,
+        "radeon_pro_w7900": 1.50,
     }
 
     # update the "cost" and "capacity_per_dollar" columns accourding to the new costs use "replica_device" as the key
     def update_cost(row):
         if row["replica_device"] == "a40":
+            return row["cost"]
+        if row["replica_device"] not in NEW_GPU_COSTS:
             return row["cost"]
         return (
             NEW_GPU_COSTS[row["replica_device"]]
@@ -88,6 +92,8 @@ def prepare_subset_dfs(_args):
 
     def update_capacity_per_dollar(row):
         if row["replica_device"] == "a40":
+            return row["capacity_per_dollar"]
+        if row["replica_device"] not in NEW_GPU_COSTS:
             return row["capacity_per_dollar"]
         return (
             row["capacity_per_dollar"]

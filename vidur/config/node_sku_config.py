@@ -60,3 +60,13 @@ class H100DgxNodeSKUConfig(BaseNodeSKUConfig):
     @staticmethod
     def get_type():
         return NodeSKUType.H100_DGX
+
+
+@dataclass
+class RadeonProW7900SingleNodeSKUConfig(BaseNodeSKUConfig):
+    device_sku_type: DeviceSKUType = DeviceSKUType.RADEON_PRO_W7900
+    num_devices_per_node: int = 1
+
+    @staticmethod
+    def get_type():
+        return NodeSKUType.RADEON_PRO_W7900_SINGLE

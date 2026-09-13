@@ -2,13 +2,13 @@ import binascii
 import enum
 from itertools import product
 from math import floor
-from typing import List
+from typing import Any, List
 
 import torch
-from sarathi.config import ParallelConfig
 
 from vidur.profiling.attention.attention_input import AttentionInput
 from vidur.profiling.collectives.collectives_input import CollectivesInput
+from vidur.profiling.common.accelerator import get_total_gpu_memory_bytes
 from vidur.profiling.common.model_config import ModelConfig
 
 
@@ -150,7 +150,7 @@ def get_attention_input_combinations(
 
 def get_max_num_blocks(
     model_config: ModelConfig,
-    parallel_config: ParallelConfig,
+    parallel_config: Any,
     block_size: int,
     dtype: torch.dtype,
     gpu_memory_utilization: float = 0.9,
@@ -168,9 +168,8 @@ def get_max_num_blocks(
     block_memory_total = block_memory_size * (
         model_config.num_layers // max_pipeline_parallel_size
     )
-    return floor(
-        (torch.cuda.mem_get_info()[1] * gpu_memory_utilization) / (block_memory_total)
-    )
+    total_memory_bytes = get_total_gpu_memory_bytes()
+    return floor((total_memory_bytes * gpu_memory_utilization) / (block_memory_total))
 
 
 def get_collectives_sizes_to_profile(max_collective_size: int):

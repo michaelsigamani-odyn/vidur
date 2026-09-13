@@ -2,6 +2,7 @@ import numpy as np
 import torch
 
 from vidur.profiling.collectives.collectives_impl import GraphedCollective
+from vidur.profiling.common.accelerator import synchronize_device
 from vidur.profiling.common.cuda_timer import CudaTimer
 from vidur.profiling.common.timer_stats_store import TimerStatsStore
 
@@ -40,7 +41,7 @@ class CollectiveWrapper:
         )
 
     def _run_collective(self):
-        torch.cuda.synchronize()
+        synchronize_device()
         torch.distributed.barrier()
 
         with self._cuda_timer:
@@ -50,7 +51,7 @@ class CollectiveWrapper:
 
             self._graphed_collective.launch()
 
-        torch.cuda.synchronize()
+        synchronize_device()
 
     def profile(self):
         self.timer_stats_store.clear_stats()

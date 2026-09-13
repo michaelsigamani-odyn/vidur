@@ -48,6 +48,7 @@ PRETTY_NAMES = {
     "h100": "H100",
     "a100": "A100",
     "a40": "A40",
+    "radeon_pro_w7900": "Radeon PRO W7900",
 }
 
 # Prices extracted from https://docs.coreweave.com/welcome-to-coreweave/resource-based-pricing on 7th Feb, 2024
@@ -56,6 +57,7 @@ GPU_COSTS = {
     "h100": 4.25,
     "a100": 2.21,
     "a40": 1.28,
+    "radeon_pro_w7900": 1.50,
 }
 
 CPU_MACHINE_COST = 3.36
