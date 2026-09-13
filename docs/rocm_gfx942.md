@@ -27,3 +27,33 @@ Interpretation:
 - Inline telemetry and cache scanning are negligible at this scale.
 - The dominant non-kernel cost is `record_function` profiler enter/exit overhead.
 - Breakdown condition is met: overhead is isolated and quantified, with a clear dominant bucket.
+
+## Phase 2 condition 2: A100 ratio check
+
+Condition goal: ensure MI300X MLP timing shape is in a plausible range relative to committed A100 compute profile data, before moving to Phase 3.
+
+Data source:
+
+- MI300X run: `profiling_outputs/mlp/2026-09-13_06-44-40/microsoft/phi-2/mlp.csv`
+- A100 reference: `data/profiling/compute/a100/microsoft/phi-2/mlp.csv`
+
+Method:
+
+- Align on shared `num_tokens` points.
+- Compute a kernel proxy per row as the sum of all `time_stats.*.mean` columns.
+- Compute ratio: `mi300x_kernel_proxy / a100_kernel_proxy`.
+
+Results (`131` shared points):
+
+- `mi300x_kernel_proxy_mean_ms`: `0.4489`
+- `a100_kernel_proxy_mean_ms`: `0.4821`
+- `ratio_mean`: `1.0097`
+- `ratio_median`: `0.9962`
+- `ratio_min`: `0.7416`
+- `ratio_max`: `1.4504`
+
+Interpretation:
+
+- Mean and median are both ~`1.0x`, indicating near-parity on this reduced sweep.
+- Extremes stay within the same order of magnitude and do not suggest broken timing scale.
+- Ratio check condition is met; Phase 3 can proceed.
