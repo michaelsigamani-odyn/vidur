@@ -71,6 +71,7 @@ class MlpWrapper:
 
     @torch.inference_mode()
     def profile(self, num_tokens: int):
+        profile_start = time.perf_counter()
         with self.backend.mlp_execution_context():
             vocab_range = self.model_config.vocab_size // self.num_tensor_parallel_workers
             input_ids = torch.randint(
@@ -106,6 +107,8 @@ class MlpWrapper:
                     )
                 synchronize_device()
                 active_wall_ms = (time.perf_counter() - active_start) * 1e3
+                profiler_enter_wall_ms = record_function_tracer.enter_wall_ms
+                profiler_exit_wall_ms = record_function_tracer.exit_wall_ms
 
                 time_stats = record_function_tracer.get_operation_time_stats()
             else:
@@ -130,6 +133,8 @@ class MlpWrapper:
 
                 synchronize_device()
                 active_wall_ms = (time.perf_counter() - active_start) * 1e3
+                profiler_enter_wall_ms = 0.0
+                profiler_exit_wall_ms = 0.0
 
                 time_stats = self.timer_stats_store.get_stats()
 
@@ -138,6 +143,7 @@ class MlpWrapper:
             active_steps = 1 if self.profile_method == ProfileMethod.RECORD_FUNCTION.value else ACTIVE_STEPS
             measured_kernel_wall_ms = active_wall_ms
             measured_kernel_mean_ms = measured_kernel_wall_ms / max(active_steps, 1)
+            profile_total_wall_ms = (time.perf_counter() - profile_start) * 1e3
 
         stats = {
             "time_stats": time_stats,
@@ -145,6 +151,9 @@ class MlpWrapper:
             "warmup_wall_ms": warmup_wall_ms,
             "measured_kernel_wall_ms": measured_kernel_wall_ms,
             "measured_kernel_mean_ms": measured_kernel_mean_ms,
+            "profiler_enter_wall_ms": profiler_enter_wall_ms,
+            "profiler_exit_wall_ms": profiler_exit_wall_ms,
+            "profile_total_wall_ms": profile_total_wall_ms,
             "active_steps": active_steps,
             "n_head": self.model_config.num_q_heads,
             "n_kv_head": self.model_config.num_kv_heads,

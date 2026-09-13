@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from vidur.logger import init_logger
 from vidur.profiling.common.model_config import ModelConfig
-from vidur.profiling.telemetry import GpuTelemetryRecorder
+from vidur.profiling.telemetry import BackgroundGpuTelemetrySampler, GpuTelemetryRecorder
 from vidur.profiling.mlp.mlp_wrapper import MlpWrapper
 from vidur.profiling.utils import ProfileMethod, get_num_tokens_to_profile
 
@@ -219,6 +219,27 @@ def parse_args():
         choices=["auto", "sarathi", "vllm_rocm", "torch"],
         help="Model executor backend. auto preserves current vendor-based selection.",
     )
+    parser.add_argument(
+        "--telemetry_mode",
+        default="background",
+        choices=["background", "inline", "off"],
+        help=(
+            "Telemetry collection mode. background samples asynchronously at a fixed interval; "
+            "inline collects one sample per iteration; off disables iteration telemetry."
+        ),
+    )
+    parser.add_argument(
+        "--telemetry_interval_seconds",
+        type=float,
+        default=1.0,
+        help="Sampling interval when --telemetry_mode=background.",
+    )
+    parser.add_argument(
+        "--cache_size_scan_mode",
+        default="once",
+        choices=["once", "per_iteration"],
+        help="Measure Triton cache size once per run or once per iteration.",
+    )
     args = parser.parse_args()
 
     args.output_dir = (
@@ -235,11 +256,16 @@ def profile_model(
     num_tokens_to_profile: List[int],
     pbar: Any,
     iteration_log_path: str,
+    telemetry_sampler: Any,
+    triton_cache_dir: str,
+    triton_cache_size_bytes_once: int,
+    triton_cache_scan_wall_ms_once: float,
 ):
     model_config = ModelConfig.from_model_name(model)
 
     all_results = []
     unsupported = []
+    overhead_records = []
 
     if args.disable_ray:
         def _create_model_wrapper(rank: int):
@@ -308,35 +334,74 @@ def profile_model(
                 model_wrappers[worker_id] = _create_model_wrapper(worker_id)
 
             latest_result = all_results[-1] if (status == "ok" and all_results) else {}
-            telemetry_snapshot = collect_iteration_runtime_snapshot(args.gpu_vendor)
-            _write_jsonl_record(
-                iteration_log_path,
+            telemetry_snapshot = {}
+            telemetry_snapshot_wall_ms = 0.0
+            if args.telemetry_mode == "inline":
+                telemetry_start = time.perf_counter()
+                telemetry_snapshot = collect_iteration_runtime_snapshot(args.gpu_vendor)
+                telemetry_snapshot_wall_ms = (time.perf_counter() - telemetry_start) * 1e3
+            elif args.telemetry_mode == "background":
+                telemetry_start = time.perf_counter()
+                if telemetry_sampler is not None:
+                    telemetry_snapshot = telemetry_sampler.latest_snapshot()
+                telemetry_snapshot_wall_ms = (time.perf_counter() - telemetry_start) * 1e3
+
+            triton_cache_size_bytes = triton_cache_size_bytes_once
+            triton_cache_scan_wall_ms = 0.0
+            if args.cache_size_scan_mode == "per_iteration":
+                cache_scan_start = time.perf_counter()
+                triton_cache_size_bytes = _get_triton_cache_size_bytes()
+                triton_cache_scan_wall_ms = (time.perf_counter() - cache_scan_start) * 1e3
+
+            record = {
+                "iteration_index": token_index,
+                **pending_input,
+                "status": status,
+                "error": error_message,
+                "wall_clock_ms": wall_clock_ms,
+                "compile_warmup_wall_ms": latest_result.get("compile_warmup_wall_ms"),
+                "warmup_wall_ms": latest_result.get("warmup_wall_ms"),
+                "measured_kernel_wall_ms": latest_result.get("measured_kernel_wall_ms"),
+                "measured_kernel_mean_ms": latest_result.get("measured_kernel_mean_ms"),
+                "profiler_enter_wall_ms": latest_result.get("profiler_enter_wall_ms"),
+                "profiler_exit_wall_ms": latest_result.get("profiler_exit_wall_ms"),
+                "profile_total_wall_ms": latest_result.get("profile_total_wall_ms"),
+                "active_steps": latest_result.get("active_steps"),
+                "triton_cache_dir": triton_cache_dir,
+                "triton_cache_size_bytes": triton_cache_size_bytes,
+                "telemetry_mode": args.telemetry_mode,
+                "telemetry_snapshot_wall_ms": telemetry_snapshot_wall_ms,
+                "cache_size_scan_mode": args.cache_size_scan_mode,
+                "cache_size_scan_wall_ms": triton_cache_scan_wall_ms,
+                "cache_size_scan_wall_ms_once": triton_cache_scan_wall_ms_once,
+                **telemetry_snapshot,
+            }
+
+            write_start = time.perf_counter()
+            _write_jsonl_record(iteration_log_path, record)
+            jsonl_write_wall_ms = (time.perf_counter() - write_start) * 1e3
+            overhead_records.append(
                 {
-                    "iteration_index": token_index,
-                    **pending_input,
-                    "status": status,
-                    "error": error_message,
-                    "wall_clock_ms": wall_clock_ms,
-                    "compile_warmup_wall_ms": latest_result.get("compile_warmup_wall_ms"),
-                    "warmup_wall_ms": latest_result.get("warmup_wall_ms"),
-                    "measured_kernel_wall_ms": latest_result.get("measured_kernel_wall_ms"),
-                    "measured_kernel_mean_ms": latest_result.get("measured_kernel_mean_ms"),
-                    "active_steps": latest_result.get("active_steps"),
-                    "triton_cache_dir": os.environ.get(
-                        "TRITON_CACHE_DIR", os.path.expanduser("~/.triton/cache")
+                    "model": model,
+                    "num_tensor_parallel_workers": num_tensor_parallel_workers,
+                    "num_tokens": num_tokens,
+                    "telemetry_snapshot_wall_ms": telemetry_snapshot_wall_ms,
+                    "cache_size_scan_wall_ms": triton_cache_scan_wall_ms,
+                    "profiler_start_stop_wall_ms": (
+                        (latest_result.get("profiler_enter_wall_ms") or 0.0)
+                        + (latest_result.get("profiler_exit_wall_ms") or 0.0)
                     ),
-                    "triton_cache_size_bytes": _get_triton_cache_size_bytes(),
-                    **telemetry_snapshot,
-                },
+                    "jsonl_write_wall_ms": jsonl_write_wall_ms,
+                }
             )
 
             pbar.update(1)
 
     if not all_results:
-        return pd.DataFrame(), unsupported
+        return pd.DataFrame(), unsupported, overhead_records
 
     df = pd.DataFrame(all_results)
-    return normalize_mlp_results_df(df), unsupported
+    return normalize_mlp_results_df(df), unsupported, overhead_records
 
 
 def main():
@@ -352,6 +417,27 @@ def main():
 
     num_tokens_to_profile = get_num_tokens_to_profile(args.max_tokens)
 
+    triton_cache_dir = os.environ.get("TRITON_CACHE_DIR", os.path.expanduser("~/.triton/cache"))
+    triton_cache_size_bytes_once = 0
+    triton_cache_scan_wall_ms_once = 0.0
+    if args.cache_size_scan_mode == "once":
+        cache_scan_once_start = time.perf_counter()
+        triton_cache_size_bytes_once = _get_triton_cache_size_bytes()
+        triton_cache_scan_wall_ms_once = (time.perf_counter() - cache_scan_once_start) * 1e3
+
+    telemetry_sampler = None
+    if args.telemetry_mode == "background":
+        try:
+            telemetry_sampler = BackgroundGpuTelemetrySampler(
+                output_dir=args.output_dir,
+                gpu_vendor=args.gpu_vendor,
+                interval_seconds=args.telemetry_interval_seconds,
+            )
+            telemetry_sampler.start()
+        except Exception as exc:
+            logger.warning("Background telemetry disabled: %s", exc)
+            telemetry_sampler = None
+
     total_combos = itertools.product(
         args.models,
         num_tokens_to_profile,
@@ -361,26 +447,55 @@ def main():
     pbar = tqdm(total=len(list(total_combos)))
     iteration_log_path = f"{args.output_dir}/iteration_metrics.jsonl"
 
-    for model in args.models:
-        result_df, unsupported = profile_model(
-            args,
-            model,
-            num_tokens_to_profile,
-            pbar,
-            iteration_log_path,
-        )
-        # model name would contain '/', so create a directory as required
-        os.makedirs(f"{args.output_dir}/{model}", exist_ok=True)
-        result_df.to_csv(f"{args.output_dir}/{model}/mlp.csv", index=False)
-        with open(f"{args.output_dir}/{model}/unsupported.json", "w") as f:
-            json.dump(unsupported, f, indent=2)
-        if telemetry_recorder:
-            telemetry_recorder.capture(
-                context={
-                    "profiler": "mlp",
-                    "model": model,
-                }
+    all_overhead_records = []
+    try:
+        for model in args.models:
+            result_df, unsupported, overhead_records = profile_model(
+                args,
+                model,
+                num_tokens_to_profile,
+                pbar,
+                iteration_log_path,
+                telemetry_sampler,
+                triton_cache_dir,
+                triton_cache_size_bytes_once,
+                triton_cache_scan_wall_ms_once,
             )
+            all_overhead_records.extend(overhead_records)
+            # model name would contain '/', so create a directory as required
+            os.makedirs(f"{args.output_dir}/{model}", exist_ok=True)
+            result_df.to_csv(f"{args.output_dir}/{model}/mlp.csv", index=False)
+            with open(f"{args.output_dir}/{model}/unsupported.json", "w") as f:
+                json.dump(unsupported, f, indent=2)
+            if telemetry_recorder:
+                telemetry_recorder.capture(
+                    context={
+                        "profiler": "mlp",
+                        "model": model,
+                    }
+                )
+
+        if all_overhead_records:
+            overhead_df = pd.DataFrame(all_overhead_records)
+            overhead_summary = {
+                "count": int(len(overhead_df)),
+                "telemetry_snapshot_wall_ms_mean": float(
+                    overhead_df["telemetry_snapshot_wall_ms"].mean()
+                ),
+                "cache_size_scan_wall_ms_mean": float(
+                    overhead_df["cache_size_scan_wall_ms"].mean()
+                ),
+                "profiler_start_stop_wall_ms_mean": float(
+                    overhead_df["profiler_start_stop_wall_ms"].mean()
+                ),
+                "jsonl_write_wall_ms_mean": float(overhead_df["jsonl_write_wall_ms"].mean()),
+                "cache_size_scan_wall_ms_once": float(triton_cache_scan_wall_ms_once),
+            }
+            with open(f"{args.output_dir}/overhead_breakdown_summary.json", "w", encoding="utf-8") as f:
+                json.dump(overhead_summary, f, indent=2)
+    finally:
+        if telemetry_sampler is not None:
+            telemetry_sampler.stop()
 
 
 if __name__ == "__main__":
