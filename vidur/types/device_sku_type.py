@@ -6,3 +6,5 @@ class DeviceSKUType(BaseIntEnum):
     A100 = 2
     H100 = 3
     RADEON_PRO_W7900 = 4
+    MI300X = 5
+    RADEON_8060S = 6

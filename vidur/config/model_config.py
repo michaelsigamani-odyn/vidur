@@ -212,3 +212,37 @@ class Qwen72BModelConfig(QwenModelConfig):
     @staticmethod
     def get_name():
         return "Qwen/Qwen-72B"
+
+
+@dataclass
+class Qwen2_5_7BModelConfig(QwenModelConfig):
+    # Source: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/config.json
+    num_layers: int = 28
+    num_q_heads: int = 28
+    num_kv_heads: int = 4
+    embedding_dim: int = 3584
+    mlp_hidden_dim: int = 18944
+    max_position_embeddings: int = 32768
+    vocab_size: int = 152064
+    rope_theta: Optional[float] = 1000000
+
+    @staticmethod
+    def get_name():
+        return "Qwen/Qwen2.5-7B-Instruct"
+
+
+@dataclass
+class Qwen2_5_14BModelConfig(QwenModelConfig):
+    # Source: https://huggingface.co/Qwen/Qwen2.5-14B-Instruct/raw/main/config.json
+    num_layers: int = 48
+    num_q_heads: int = 40
+    num_kv_heads: int = 8
+    embedding_dim: int = 5120
+    mlp_hidden_dim: int = 13824
+    max_position_embeddings: int = 32768
+    vocab_size: int = 152064
+    rope_theta: Optional[float] = 1000000
+
+    @staticmethod
+    def get_name():
+        return "Qwen/Qwen2.5-14B-Instruct"

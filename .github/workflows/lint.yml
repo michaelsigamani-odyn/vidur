@@ -24,3 +24,7 @@ jobs:
         run: make lint/black
       - name: "Run isort check"
         run: make lint/isort
+      - name: "Run profiling validation tests"
+        run: python -m unittest tests.profiling.test_validate tests.config.test_story1_amd_configs tests.test_main_missing_profile
+      - name: "Run AMD profiling gates"
+        run: python -m vidur.profiling.validate --compute-root data/profiling/compute --device-skus mi300x radeon_8060s

@@ -7,9 +7,11 @@ def main() -> None:
     config: SimulationConfig = SimulationConfig.create_from_cli_args()
 
     set_seeds(config.seed)
-
-    simulator = Simulator(config)
-    simulator.run()
+    try:
+        simulator = Simulator(config)
+        simulator.run()
+    except FileNotFoundError as error:
+        raise SystemExit(str(error)) from error
 
 
 if __name__ == "__main__":

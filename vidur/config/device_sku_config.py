@@ -56,3 +56,31 @@ class RadeonProW7900DeviceSKUConfig(BaseDeviceSKUConfig):
     @staticmethod
     def get_type():
         return DeviceSKUType.RADEON_PRO_W7900
+
+
+@dataclass
+class Mi300XDeviceSKUConfig(BaseDeviceSKUConfig):
+    # Source: https://www.amd.com/en/products/accelerators/instinct/mi300/mi300x.html
+    fp16_tflops: int = 1307
+    total_memory_gb: int = 192
+    memory_bandwidth_gbps: int = 5300
+
+    @staticmethod
+    def get_type():
+        return DeviceSKUType.MI300X
+
+
+@dataclass
+class Radeon8060SDeviceSKUConfig(BaseDeviceSKUConfig):
+    # FP16 TFLOPS derived from AMD stream processors + boost clock product page specs.
+    # Source: https://www.amd.com/en/products/graphics/amd-radeon-8060s.html
+    fp16_tflops: int = 30
+    # Configured allocatable GPU memory read from odyn-radeon2 via `amd-smi static --vram`.
+    total_memory_gb: int = 64
+    # LPDDR5X-8000 256-bit system bandwidth is shared with the CPU on Strix Halo.
+    # Source: https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html
+    memory_bandwidth_gbps: int = 256
+
+    @staticmethod
+    def get_type():
+        return DeviceSKUType.RADEON_8060S

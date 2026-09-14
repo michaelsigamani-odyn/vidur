@@ -22,15 +22,17 @@ Vidur is a high-fidelity and extensible LLM inference system simulator. It can h
 
 __Instructions on adding a new model to existing or new SKUs can be found [here](docs/profiling.md)__.
 
-| Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node |
-| --- | --- | --- | --- | --- |
-| `meta-llama/Meta-Llama-3-8B` | ✅ | ❌ | ✅ | ❌ |
-| `meta-llama/Meta-Llama-3-70B` | ✅ | ❌ | ✅ | ❌ |
-| `meta-llama/Llama-2-7b-hf` | ✅ | ✅ | ✅ | ✅ |
-| `codellama/CodeLlama-34b-Instruct-hf"` | ✅ | ✅ | ✅ | ✅ |
-| `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ |
-| `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ |
-| `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ |
+| Model / Device | A100 80GB DGX | H100 DGX | 4xA100 80GB Pairwise NVLink Node | 8xA40 Pairwise NVLink Node | MI300X Single | Radeon 8060S Single | DGX Spark (QSFP) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `meta-llama/Meta-Llama-3-8B` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `meta-llama/Meta-Llama-3-70B` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `meta-llama/Llama-2-7b-hf` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `codellama/CodeLlama-34b-Instruct-hf"` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `meta-llama/Llama-2-70b-hf` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `internlm/internlm-20b` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `Qwen/Qwen-72B` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `Qwen/Qwen2.5-7B-Instruct` | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| `Qwen/Qwen2.5-14B-Instruct` | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
 
 * All models support a maximum context length of 4k except `Llama3-8B` and `Llama3-70B` which support 16k context length by passing additional CLI params:
 
