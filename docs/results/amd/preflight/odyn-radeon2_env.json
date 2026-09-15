@@ -1,0 +1,10 @@
+[
+  {
+    "host_alias": "odyn-radeon2",
+    "captured_at_utc": "2026-09-14T02:33:26.504240+00:00",
+    "command": "hostname; amd-smi static 2>/dev/null | head -20 || nvidia-smi -L",
+    "stdout": "odyn-radeon2\nGPU: 0\n    ASIC:\n        MARKET_NAME: Radeon 8060S Graphics\n        VENDOR_ID: 0x1002\n        VENDOR_NAME: Advanced Micro Devices Inc. [AMD/ATI]\n        SUBVENDOR_ID: 0x2014\n        DEVICE_ID: 0x1586\n        SUBSYSTEM_ID: 0x801d\n        REV_ID: 0xc1\n        ASIC_SERIAL: 0x0000000000000000\n        OAM_ID: N/A\n        NUM_COMPUTE_UNITS: 40\n        TARGET_GRAPHICS_VERSION: gfx1151\n    BUS:\n        BDF: 0000:c5:00.0\n        MAX_PCIE_WIDTH: N/A\n        MAX_PCIE_SPEED: N/A\n        PCIE_LEVELS: N/A\n        PCIE_INTERFACE_VERSION: N/A\n        SLOT_TYPE: N/A\n",
+    "stderr": "",
+    "return_code": 0
+  }
+]

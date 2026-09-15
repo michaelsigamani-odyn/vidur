@@ -490,7 +490,10 @@ class VllmRocmBackend(ModelExecutorBackend):
         import vllm.model_executor.layers.linear as linear_mod
         import vllm.model_executor.layers.vocab_parallel_embedding as embedding_mod
         from vllm import EngineArgs
-        from vllm.config.vllm import set_current_vllm_config
+        try:
+            from vllm.config.vllm import set_current_vllm_config
+        except ModuleNotFoundError:
+            from vllm.config import set_current_vllm_config
 
         for module in (parameter_mod, linear_mod, embedding_mod):
             module.get_tensor_model_parallel_rank = lambda: rank
