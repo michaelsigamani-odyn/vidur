@@ -1,0 +1,14 @@
+disable_ray: false
+gpu_vendor: amd
+max_tokens: 4096
+models:
+- Qwen/Qwen2.5-7B-Instruct
+- Qwen/Qwen2.5-14B-Instruct
+num_gpus: 1
+num_tensor_parallel_workers:
+- 1
+- 2
+- 4
+- 8
+output_dir: profiling_outputs_amd/mlp/2026-09-14_04-02-14
+profile_method: record_function

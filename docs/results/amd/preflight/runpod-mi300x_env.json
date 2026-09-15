@@ -1,0 +1,10 @@
+[
+  {
+    "host_alias": "runpod-mi300x",
+    "captured_at_utc": "2026-09-14T02:34:10+00:00",
+    "command": "hostname; /opt/rocm/bin/amd-smi static 2>/dev/null | head -20 || amd-smi static 2>/dev/null | head -20 || nvidia-smi -L",
+    "stdout": "f3bab8d75c53\nGPU: 0\nASIC:\n    MARKET_NAME: AMD Instinct MI300X OAM\n    VENDOR_ID: 0x1002\n    SUBVENDOR_ID: 0\n    DEVICE_ID: 0x74a1\n    REV_ID: 0x0\n    ASIC_SERIAL: 0x4a0ab02b801c06de\nBUS:\n    BDF: 0000:05:00.0\n    MAX_PCIE_SPEED: 32 GT/s\n    MAX_PCIE_LANES: 16\n    PCIE_INTERFACE_VERSION: Gen 5\n    PCIE_SLOT_TYPE: PCIE\nVBIOS:\n    NAME: AMD MI300X_HWEMU_SRIOV_CVS_1VF\n    BUILD_DATE: 2024/01/19 12:50\n    PART_NUMBER: 113-MI3SRIOV-001\n    VERSION: 022.040.003.036.000001\nBOARD:\n",
+    "stderr": "",
+    "return_code": 0
+  }
+]

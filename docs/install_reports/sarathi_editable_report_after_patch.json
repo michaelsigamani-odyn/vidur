@@ -1,0 +1,88 @@
+{
+  "version": "1",
+  "pip_version": "26.2.1",
+  "install": [
+    {
+      "download_info": {
+        "url": "file:///home/michael/sarathi-serve",
+        "dir_info": {
+          "editable": true
+        }
+      },
+      "is_direct": true,
+      "is_yanked": false,
+      "requested": true,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "sarathi",
+        "version": "0.1.7",
+        "dynamic": [
+          "author",
+          "classifier",
+          "description",
+          "description-content-type",
+          "home-page",
+          "license",
+          "license-file",
+          "requires-dist",
+          "requires-python",
+          "summary"
+        ],
+        "summary": "A high-throughput and low-latency serving engine for LLMs",
+        "description": "# Sarathi-Serve\n\nThis is the official OSDI'24 artifact submission for paper #444, \"Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve”.\n\n## Setup\n\n### Setup CUDA\n\nSarathi-Serve has been tested with CUDA 12.1 on A100 and A40 GPUs.\n\n### Clone repository\n\n```sh\ngit clone git@github.com:microsoft/sarathi-serve.git\n```\n\n### Create mamba environment\n\nSetup mamba if you don't already have it,\n\n```sh\nwget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh\nbash Mambaforge-Linux-x86_64.sh # follow the instructions from there\n```\n\nCreate a Python 3.10 environment,\n\n```sh\nmamba create -p ./env python=3.10  \n```\n\n### Install Sarathi-Serve\n\n```sh\npip install -e . --extra-index-url https://flashinfer.ai/whl/cu121/torch2.3/\n```\n\n## Reproducing Results\n\nRefer to readmes in individual folders corresponding to each figure in `osdi-experiments`.\n\n## Citation\n\nIf you use our work, please consider citing our paper:\n\n```\n@article{agrawal2024taming,\n  title={Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve},\n  author={Agrawal, Amey and Kedia, Nitin and Panwar, Ashish and Mohan, Jayashree and Kwatra, Nipun and Gulavani, Bhargav S and Tumanov, Alexey and Ramjee, Ramachandran},\n  journal={Proceedings of 18th USENIX Symposium on Operating Systems Design and Implementation, 2024, Santa Clara},\n  year={2024}\n}\n```\n\n## Acknowledgment\n\nThis repository originally started as a fork of the [vLLM project](https://vllm-project.github.io/). Sarathi-Serve is a research prototype and does not have complete feature parity with open-source vLLM. We have only retained the most critical features and adopted the codebase for faster research iterations.\n",
+        "description_content_type": "text/markdown",
+        "home_page": "https://github.com/microsoft/sarathi",
+        "author": "Sarathi Team",
+        "license": "Apache 2.0",
+        "license_file": [
+          "LICENSE"
+        ],
+        "classifier": [
+          "Programming Language :: Python :: 3.10",
+          "License :: OSI Approved :: Apache Software License",
+          "Topic :: Scientific/Engineering :: Artificial Intelligence"
+        ],
+        "requires_dist": [
+          "ninja",
+          "psutil",
+          "ray>=2.5.1",
+          "pandas",
+          "pyarrow",
+          "sentencepiece",
+          "numpy",
+          "torch==2.3",
+          "transformers>=4.37.0",
+          "matplotlib",
+          "plotly_express",
+          "seaborn",
+          "wandb",
+          "kaleido",
+          "ddsketch",
+          "jupyterlab",
+          "flashinfer>=0.0.5",
+          "pillow",
+          "tiktoken",
+          "grpcio",
+          "uvicorn",
+          "fastapi",
+          "openai",
+          "tqdm"
+        ],
+        "requires_python": ">=3.10"
+      }
+    }
+  ],
+  "environment": {
+    "implementation_name": "cpython",
+    "implementation_version": "3.12.3",
+    "os_name": "posix",
+    "platform_machine": "aarch64",
+    "platform_release": "6.17.0-1029-nvidia",
+    "platform_system": "Linux",
+    "platform_version": "#29-Ubuntu SMP PREEMPT_DYNAMIC Wed Jul  1 00:13:52 UTC 2026",
+    "python_full_version": "3.12.3",
+    "platform_python_implementation": "CPython",
+    "python_version": "3.12",
+    "sys_platform": "linux"
+  }
+}
