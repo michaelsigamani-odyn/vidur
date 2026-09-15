@@ -1,0 +1,7 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Map:   0%|          | 0/2000 [00:00<?, ? examples/s]Map: 100%|██████████| 2000/2000 [00:00<00:00, 42109.37 examples/s]
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files:  25%|██▌       | 1/4 [07:16<21:48, 436.10s/it]Fetching 4 files:  50%|█████     | 2/4 [08:28<07:23, 221.93s/it]Fetching 4 files:  75%|███████▌  | 3/4 [08:44<02:08, 128.09s/it]Fetching 4 files: 100%|██████████| 4/4 [09:54<00:00, 104.96s/it]Fetching 4 files: 100%|██████████| 4/4 [09:54<00:00, 148.51s/it]
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights: 100%|██████████| 339/339 [00:00<00:00, 13734.68it/s]
+
+[2026-09-15 03:08:36] odyn-dgx3:2269210:2269210 [0] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
