@@ -1,0 +1,13 @@
+disable_ray: false
+gpu_vendor: amd
+max_tokens: 1024
+models:
+- microsoft/phi-2
+num_gpus: 1
+num_tensor_parallel_workers:
+- 1
+- 2
+- 4
+- 8
+output_dir: profiling_outputs_amd/mlp/2026-09-13_04-38-53
+profile_method: record_function
