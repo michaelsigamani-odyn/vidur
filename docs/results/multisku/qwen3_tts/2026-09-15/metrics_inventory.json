@@ -1,0 +1,43 @@
+{
+  "captured_at_utc": "2026-09-15T04:40:00Z",
+  "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "branch": "epic-integration-mi300x-dgx",
+  "results": [
+    {
+      "platform": "nvidia",
+      "host": "odyn-dgx1",
+      "container": "qwen3tts_dgx1",
+      "status": "failed",
+      "status_detail": "Exited (1)",
+      "blocking_error": "FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml",
+      "artifacts": [
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1.status.txt",
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1.log"
+      ]
+    },
+    {
+      "platform": "nvidia",
+      "host": "odyn-dgx3",
+      "container": "qwen3tts_dgx3",
+      "status": "failed",
+      "status_detail": "Exited (1)",
+      "blocking_error": "FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml",
+      "artifacts": [
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3.status.txt",
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3.log"
+      ]
+    },
+    {
+      "platform": "amd",
+      "host": "runpod-mi300x",
+      "workload": "Qwen2.5 MLP profiling",
+      "status": "blocked",
+      "status_detail": "log exists; repeated actor init failures",
+      "blocking_error": "TypeError: ColumnParallelLinear.__init__() got an unexpected keyword argument 'tp_size'",
+      "artifacts": [
+        "docs/results/multisku/qwen3_tts/2026-09-15/mi300x_qwen2_status.txt",
+        "docs/results/multisku/qwen3_tts/2026-09-15/mi300x_qwen2_mlp_tail.log"
+      ]
+    }
+  ]
+}
