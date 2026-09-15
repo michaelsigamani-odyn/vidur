@@ -11,14 +11,12 @@ logger = init_logger(__name__)
 class BaseDeviceSKUConfig(BaseFixedConfig):
     fp16_tflops: int
     total_memory_gb: int
-    memory_bandwidth_gbps: int
 
 
 @dataclass
 class A40DeviceSKUConfig(BaseDeviceSKUConfig):
     fp16_tflops: int = 150
     total_memory_gb: int = 45
-    memory_bandwidth_gbps: int = 696
 
     @staticmethod
     def get_type():
@@ -29,7 +27,6 @@ class A40DeviceSKUConfig(BaseDeviceSKUConfig):
 class A100DeviceSKUConfig(BaseDeviceSKUConfig):
     fp16_tflops: int = 312
     total_memory_gb: int = 80
-    memory_bandwidth_gbps: int = 2039
 
     @staticmethod
     def get_type():
@@ -40,7 +37,6 @@ class A100DeviceSKUConfig(BaseDeviceSKUConfig):
 class H100DeviceSKUConfig(BaseDeviceSKUConfig):
     fp16_tflops: int = 1000
     total_memory_gb: int = 80
-    memory_bandwidth_gbps: int = 3350
 
     @staticmethod
     def get_type():

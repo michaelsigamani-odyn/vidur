@@ -6,7 +6,6 @@ import ray
 import torch
 
 from vidur.logger import init_logger
-from vidur.profiling.common.accelerator import set_visible_device
 from vidur.profiling.collectives.collectives_input import CollectivesInput
 from vidur.profiling.collectives.collectives_wrapper import CollectiveWrapper
 
@@ -24,7 +23,9 @@ class BenchmarkRunner:
         self._head_ip = head_ip
 
     def _set_cuda_visible_devices(self) -> None:
-        set_visible_device(self._gpu_id % self._max_devices_per_node)
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(
+            self._gpu_id % self._max_devices_per_node
+        )
         # set additional nccl env vars
         # This env var set by Ray causes exceptions with graph building.
         os.environ.pop("NCCL_ASYNC_ERROR_HANDLING", None)
@@ -82,8 +83,7 @@ class BenchmarkRunner:
         logger.info(
             f"Initializing gpu id: {self._gpu_id}, Rank: {rank}, num_workers: {num_workers}, comm_id: {comm_id}, "
             f"devices_per_node: {devices_per_node}, max_devices_per_node: {self._max_devices_per_node}, "
-            f"ip_addr: {ray.util.get_node_ip_address()}, CUDA_VISIBLE_DEVICES: {os.environ['CUDA_VISIBLE_DEVICES']}, "
-            f"HIP_VISIBLE_DEVICES: {os.environ['HIP_VISIBLE_DEVICES']}"
+            f"ip_addr: {ray.util.get_node_ip_address()}, CUDA_VISIBLE_DEVICES: {os.environ['CUDA_VISIBLE_DEVICES']}"
         )
 
         torch.distributed.init_process_group(

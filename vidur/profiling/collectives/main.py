@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from vidur.logger import init_logger
 from vidur.profiling.collectives.benchmark_runner import BenchmarkRunner
-from vidur.profiling.telemetry import GpuTelemetryRecorder
 from vidur.profiling.utils import get_collectives_inputs
 
 logger = init_logger(__name__)
@@ -39,12 +38,6 @@ def parse_args():
         default="all_reduce",
         choices=["all_reduce", "send_recv"],
         help="Collective to profile",
-    )
-    parser.add_argument(
-        "--gpu_vendor",
-        default="auto",
-        choices=["auto", "nvidia", "amd"],
-        help="GPU telemetry backend. auto selects amd-smi or nvidia-smi from PATH.",
     )
     args = parser.parse_args()
 
@@ -83,13 +76,6 @@ def create_runner_pool():
 
 def main():
     args = parse_args()
-
-    telemetry_recorder = None
-    try:
-        telemetry_recorder = GpuTelemetryRecorder(args.output_dir, args.gpu_vendor)
-    except Exception as exc:
-        logger.warning("GPU telemetry disabled: %s", exc)
-        telemetry_recorder = None
 
     ray.init()
 
@@ -132,13 +118,6 @@ def main():
 
     # write results to a csv file
     df.to_csv(f"{args.output_dir}/{args.collective}.csv")
-    if telemetry_recorder:
-        telemetry_recorder.capture(
-            context={
-                "profiler": "collective",
-                "collective": args.collective,
-            }
-        )
 
 
 if __name__ == "__main__":
