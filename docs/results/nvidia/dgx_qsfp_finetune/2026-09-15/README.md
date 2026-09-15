@@ -10,9 +10,9 @@
 
 - Node logs in `logs/` for `qwen25_7b` and `qwen25_14b`
 - Completed 7B trainer metrics: `metrics/qwen25_7b/checkpoint-120/trainer_state.json`
-- In-progress 14B trainer metrics snapshot: `metrics/qwen25_14b/checkpoint-60/trainer_state.json`
+- 14B trainer metrics snapshots: `metrics/qwen25_14b/checkpoint-60/trainer_state.json`, `metrics/qwen25_14b/checkpoint-120/trainer_state.json`
 
 ### Notes
 
 - 7B run completed and rolled into 14B in the same launcher sequence.
-- 14B metrics here are a checkpoint snapshot and not final completion metrics.
+- 14B completed to step 120; both midpoint and final metric snapshots are stored.
