@@ -1,5 +1,23 @@
 # Vidur: LLM Inference System Simulator
 
+Bottom line: this is the single most relevant piece of research infrastructure surfaced yet for the cross-OEM program — more directly actionable than anything in the doc's Appendix A, because it's a simulator that already runs, is forked internally, and appears to have been extended specifically for AMD/ROCm.
+
+What it is
+
+Vidur is Microsoft's peer-reviewed (MLSys 2024) high-fidelity LLM inference simulator — it predicts TTFT/TPOT/batch-size/E2E latency for a given model+hardware+scheduler config without needing GPU access, except a brief initial profiling pass. Michael's fork (michaelsigamani-odyn/vidur) adds a ROCm/AMD Radeon path: --gpu_vendor amd, a radeon_pro_w7900 device config, and a docs/rocm_validation.md describing a reproducible ROCm/PyTorch-ROCm/vLLM-ROCm/amd-smi version matrix.
+
+Ranking against the research doc
+Rank	Item	Why
+1	Vidur (this fork)	Directly operationalizes the doc's central claims (Splitwise/DistServe disaggregation) into a testable simulator that now spans both OEMs. Nothing in Appendix A or B does this — those are papers/frameworks, not a tool the team already has running with a documented ROCm profiling path.
+2	Splitwise (arXiv:2311.18677)	The empirical basis the doc leans on hardest; Vidur's scheduler/prediction models are the closest software analog.
+3	Mooncake (arXiv:2407.00079)	KV-transfer-centric design — Vidur doesn't model this natively, so it complements rather than replaces it.
+4	DistServe (arXiv:2401.09670)	Same category as Splitwise; conceptual foundation, not tooling.
+5	llm-d, Ray Core (Appendix B)	Orchestration-layer tools; lower relevance now that the team has explicitly moved away from Ray in production (per Slack).
+Why it matters for the task plan specifically
+T3 (disaggregated prefill validation) — Vidur can pre-screen prefill/decode configurations in simulation before burning the 5-day A100+RX7900XTX validation window, potentially shrinking that task or de-risking it.
+T5 (capability matrix) — the fork's device/model support table (A100 DGX, H100 DGX, 4xA100 NVLink, 8xA40, plus the new Radeon path) is essentially a live, testable version of the capability matrix T5 calls for.
+T8 (transfer-aware routing score) — Vidur's chrome-trace output and per-metric logging (docs/metrics.md) could supply the empirical calibration data the KV-transfer cost estimator needs, rather than guessing.
+
 Vidur is a high-fidelity and extensible LLM inference system simulator. It can help you with:
 
 1. Study the system performance of models under different workloads and configurations.
