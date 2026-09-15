@@ -23,6 +23,14 @@ class ModelExecutorBackend(ABC):
     def name(self) -> str:
         raise NotImplementedError
 
+    @property
+    def needs_manual_linear_timers(self) -> bool:
+        return False
+
+    @property
+    def needs_manual_embedding_timer(self) -> bool:
+        return False
+
     def create_parallel_config(
         self, tensor_parallel_size: int, pipeline_parallel_size: int = 1
     ) -> ParallelConfig:
@@ -371,6 +379,14 @@ class SarathiBackend(ModelExecutorBackend):
     def name(self) -> str:
         return "sarathi"
 
+    @property
+    def needs_manual_linear_timers(self) -> bool:
+        return False
+
+    @property
+    def needs_manual_embedding_timer(self) -> bool:
+        return False
+
     def patch_cuda_timer(self, cuda_timer_cls: Type[Any]) -> None:
         import sarathi.metrics.cuda_timer
 
@@ -476,6 +492,14 @@ class VllmRocmBackend(ModelExecutorBackend):
     @property
     def name(self) -> str:
         return "vllm_rocm"
+
+    @property
+    def needs_manual_linear_timers(self) -> bool:
+        return True
+
+    @property
+    def needs_manual_embedding_timer(self) -> bool:
+        return True
 
     def patch_cuda_timer(self, cuda_timer_cls: Type[Any]) -> None:
         self._cuda_timer_cls = cuda_timer_cls
@@ -697,7 +721,339 @@ class VllmRocmBackend(ModelExecutorBackend):
         raise NotImplementedError
 
 
-def create_model_executor_backend(gpu_vendor: str = "auto") -> ModelExecutorBackend:
+class _TorchSiluAndMul(torch.nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x1, x2 = x.chunk(2, dim=-1)
+        return torch.nn.functional.silu(x1) * x2
+
+
+class _TorchRMSNorm(torch.nn.Module):
+    def __init__(self, hidden_size: int, eps: float = 1e-6):
+        super().__init__()
+        self.weight = torch.nn.Parameter(torch.ones(hidden_size))
+        self.eps = eps
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        input_dtype = x.dtype
+        x_fp32 = x.float()
+        variance = x_fp32.pow(2).mean(dim=-1, keepdim=True)
+        normed = x_fp32 * torch.rsqrt(variance + self.eps)
+        return (normed.to(dtype=input_dtype)) * self.weight.to(dtype=input_dtype)
+
+
+class _TorchRotaryEmbedding:
+    def __init__(
+        self,
+        head_size: int,
+        rotary_dim: int,
+        max_position: int,
+        base: float,
+        is_neox_style: bool,
+        rope_scaling: dict[str, Any] | None,
+    ) -> None:
+        if rotary_dim > head_size:
+            raise ValueError(
+                f"rotary_dim={rotary_dim} must be <= head_size={head_size}"
+            )
+        if rotary_dim % 2 != 0:
+            raise ValueError(f"rotary_dim={rotary_dim} must be even")
+
+        self.head_size = head_size
+        self.rotary_dim = rotary_dim
+        self.base = float(base)
+        self.max_position = max_position
+        self.is_neox_style = is_neox_style
+        self.rope_scaling = rope_scaling
+
+    @staticmethod
+    def _rotate_half(x: torch.Tensor) -> torch.Tensor:
+        x1 = x[..., ::2]
+        x2 = x[..., 1::2]
+        return torch.stack((-x2, x1), dim=-1).flatten(start_dim=-2)
+
+    def _get_cos_sin(
+        self,
+        positions: torch.Tensor,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        inv_freq = 1.0 / (
+            self.base
+            ** (
+                torch.arange(0, self.rotary_dim, 2, device=device, dtype=torch.float32)
+                / self.rotary_dim
+            )
+        )
+        pos = positions.to(dtype=torch.float32)
+        freqs = torch.outer(pos, inv_freq)
+        emb = torch.cat((freqs, freqs), dim=-1)
+        cos = emb.cos().to(dtype=dtype)
+        sin = emb.sin().to(dtype=dtype)
+        return cos, sin
+
+    def _apply_rope(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+        if self.rotary_dim == 0:
+            return x
+        x_rot = x[..., : self.rotary_dim]
+        x_pass = x[..., self.rotary_dim :]
+        cos = cos.unsqueeze(1)
+        sin = sin.unsqueeze(1)
+        x_rotated = (x_rot * cos) + (self._rotate_half(x_rot) * sin)
+        return torch.cat((x_rotated, x_pass), dim=-1)
+
+    def __call__(
+        self,
+        positions: torch.Tensor,
+        query: torch.Tensor,
+        key: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        if query.shape[-1] % self.head_size != 0 or key.shape[-1] % self.head_size != 0:
+            raise ValueError("query/key hidden dimensions must be divisible by head dimension")
+        q = query.view(query.shape[0], -1, self.head_size)
+        k = key.view(key.shape[0], -1, self.head_size)
+        cos, sin = self._get_cos_sin(positions, q.device, q.dtype)
+        q_out = self._apply_rope(q, cos, sin).reshape_as(query)
+        k_out = self._apply_rope(k, cos, sin).reshape_as(key)
+        return q_out, k_out
+
+
+class _TorchColumnParallelLinear(torch.nn.Module):
+    _timer_cls: Type[Any] | None = None
+
+    def __init__(
+        self,
+        input_size: int,
+        output_size: int,
+        bias: bool = True,
+        gather_output: bool = False,
+        linear_metric_name: str = "",
+        world_size: int = 1,
+    ) -> None:
+        super().__init__()
+        del gather_output
+        if output_size % world_size != 0:
+            raise ValueError(
+                f"output_size={output_size} must be divisible by world_size={world_size}"
+            )
+        output_size_per_partition = output_size // world_size
+        self.linear = torch.nn.Linear(input_size, output_size_per_partition, bias=bias)
+        self._metric_name = linear_metric_name
+        self._timer = (
+            self._timer_cls(self._metric_name)
+            if self._timer_cls is not None and self._metric_name
+            else None
+        )
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, None]:
+        if self._timer is None:
+            return self.linear(x), None
+        with self._timer:
+            return self.linear(x), None
+
+
+class _TorchRowParallelLinear(torch.nn.Module):
+    _timer_cls: Type[Any] | None = None
+
+    def __init__(
+        self,
+        input_size: int,
+        output_size: int,
+        bias: bool = True,
+        input_is_parallel: bool = True,
+        reduce_results: bool = True,
+        linear_metric_name: str = "",
+        world_size: int = 1,
+    ) -> None:
+        super().__init__()
+        del input_is_parallel
+        if input_size % world_size != 0:
+            raise ValueError(
+                f"input_size={input_size} must be divisible by world_size={world_size}"
+            )
+        input_size_per_partition = input_size // world_size
+        effective_bias = bias and reduce_results
+        self.linear = torch.nn.Linear(
+            input_size_per_partition,
+            output_size,
+            bias=effective_bias,
+        )
+        self._metric_name = linear_metric_name
+        self._timer = (
+            self._timer_cls(self._metric_name)
+            if self._timer_cls is not None and self._metric_name
+            else None
+        )
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, None]:
+        if self._timer is None:
+            return self.linear(x), None
+        with self._timer:
+            return self.linear(x), None
+
+
+class _TorchVocabParallelEmbedding(torch.nn.Module):
+    _timer_cls: Type[Any] | None = None
+
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        linear_metric_name: str = "",
+        reduce_results: bool = False,
+        world_size: int = 1,
+        rank: int = 0,
+    ) -> None:
+        super().__init__()
+        del reduce_results
+        if num_embeddings % world_size != 0:
+            raise ValueError(
+                f"num_embeddings={num_embeddings} must be divisible by world_size={world_size}"
+            )
+        self._vocab_size_per_partition = num_embeddings // world_size
+        self._vocab_start_index = rank * self._vocab_size_per_partition
+        self._vocab_end_index = self._vocab_start_index + self._vocab_size_per_partition
+        self.embedding = torch.nn.Embedding(self._vocab_size_per_partition, embedding_dim)
+        self._metric_name = linear_metric_name
+        self._timer = (
+            self._timer_cls(self._metric_name)
+            if self._timer_cls is not None and self._metric_name
+            else None
+        )
+
+    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        local_ids = input_ids - self._vocab_start_index
+        out_of_range = (input_ids < self._vocab_start_index) | (
+            input_ids >= self._vocab_end_index
+        )
+        if torch.any(out_of_range):
+            raise ValueError("input_ids contain token outside local vocab shard")
+        if self._timer is None:
+            return self.embedding(local_ids)
+        with self._timer:
+            return self.embedding(local_ids)
+
+
+class TorchRocmBackend(ModelExecutorBackend):
+    """Pure-torch ROCm backend scaffold.
+
+    Incomplete: attention wrapper is intentionally unimplemented in Phase 1.
+    """
+
+    @property
+    def name(self) -> str:
+        return "torch"
+
+    @property
+    def needs_manual_linear_timers(self) -> bool:
+        return False
+
+    @property
+    def needs_manual_embedding_timer(self) -> bool:
+        return False
+
+    def patch_cuda_timer(self, cuda_timer_cls: Type[Any]) -> None:
+        _TorchColumnParallelLinear._timer_cls = cuda_timer_cls
+        _TorchRowParallelLinear._timer_cls = cuda_timer_cls
+        _TorchVocabParallelEmbedding._timer_cls = cuda_timer_cls
+
+    def initialize_dummy_weights(self, model: Any) -> None:
+        for _, parameter in model.named_parameters(recurse=True):
+            if not parameter.requires_grad:
+                continue
+            if parameter.dtype.is_floating_point:
+                parameter.data.normal_(mean=0.0, std=0.02)
+            else:
+                parameter.data.zero_()
+
+    def get_silu_and_mul_cls(self) -> Type[Any]:
+        return _TorchSiluAndMul
+
+    def get_rms_norm_cls(self) -> Type[Any]:
+        return _TorchRMSNorm
+
+    def get_rope_fn(self) -> Any:
+        def _get_rope_adapter(
+            head_size: int,
+            rotary_dim: int,
+            max_position: int,
+            base: float,
+            is_neox_style: bool,
+            rope_scaling: dict[str, Any] | None,
+        ) -> Any:
+            return _TorchRotaryEmbedding(
+                head_size=head_size,
+                rotary_dim=rotary_dim,
+                max_position=max_position,
+                base=base,
+                is_neox_style=is_neox_style,
+                rope_scaling=rope_scaling,
+            )
+
+        return _get_rope_adapter
+
+    def get_column_parallel_linear_cls(self) -> Type[Any]:
+        return _TorchColumnParallelLinear
+
+    def get_row_parallel_linear_cls(self) -> Type[Any]:
+        return _TorchRowParallelLinear
+
+    def get_vocab_parallel_embedding_cls(self) -> Type[Any]:
+        return _TorchVocabParallelEmbedding
+
+    def list_attention_backends(self) -> List[str]:
+        return ["triton_fa", "sdpa"]
+
+    def resolve_attention_backend(self, requested_backend: str) -> str:
+        normalized = requested_backend.lower()
+        if normalized == "auto":
+            return "sdpa"
+        if normalized in self.list_attention_backends():
+            return normalized
+        raise ValueError(
+            f"Unsupported attention backend '{requested_backend}' for TorchRocmBackend. "
+            "Use triton_fa or sdpa."
+        )
+
+    def create_attention_wrapper(
+        self,
+        model_config: Any,
+        parallel_config: ParallelConfig,
+        block_size: int,
+        device: Any,
+        attention_backend: str,
+    ) -> Any:
+        del model_config, parallel_config, block_size, device, attention_backend
+        raise NotImplementedError
+
+    def create_llm_engine_from_args(self, **kwargs: Any) -> Any:
+        del kwargs
+        raise NotImplementedError
+
+    def create_sampling_params(self, **kwargs: Any) -> Any:
+        del kwargs
+        raise NotImplementedError
+
+    def get_cpu_operation_metrics_enum(self) -> Any:
+        raise NotImplementedError
+
+
+def create_model_executor_backend(
+    gpu_vendor: str = "auto",
+    model_executor_backend: str = "auto",
+) -> ModelExecutorBackend:
+    normalized_backend = model_executor_backend.lower()
+    if normalized_backend == "sarathi":
+        return SarathiBackend()
+    if normalized_backend == "vllm_rocm":
+        return VllmRocmBackend()
+    if normalized_backend == "torch":
+        return TorchRocmBackend()
+    if normalized_backend != "auto":
+        raise ValueError(
+            f"Unknown model executor backend '{model_executor_backend}'. "
+            "Use one of: auto, sarathi, vllm_rocm, torch."
+        )
+
     resolved_vendor = resolve_runtime_gpu_vendor(gpu_vendor)
     if resolved_vendor == "amd":
         return VllmRocmBackend()

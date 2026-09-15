@@ -1,0 +1,27 @@
+{
+  "host": "odyn-radeon2",
+  "captured_at_utc": "2026-09-15T04:05:00Z",
+  "source_run_dir": "/home/michael/vidur-odyn/profiling_outputs_amd/mlp/2026-09-14_04-02-14",
+  "models": [
+    {
+      "name": "Qwen/Qwen2.5-7B-Instruct",
+      "mlp_csv": "Qwen/Qwen2.5-7B-Instruct/mlp.csv",
+      "unsupported_json": "Qwen/Qwen2.5-7B-Instruct/unsupported.json",
+      "mlp_rows_including_header": 262,
+      "unsupported_records": 783
+    },
+    {
+      "name": "Qwen/Qwen2.5-14B-Instruct",
+      "mlp_csv": "Qwen/Qwen2.5-14B-Instruct/mlp.csv",
+      "unsupported_json": "Qwen/Qwen2.5-14B-Instruct/unsupported.json",
+      "mlp_rows_including_header": 262,
+      "unsupported_records": 783
+    }
+  ],
+  "shared_artifacts": {
+    "config": "config.yaml",
+    "gpu_telemetry": "gpu_telemetry.jsonl",
+    "iteration_metrics": "iteration_metrics.jsonl",
+    "profiler_trace_files": 522
+  }
+}

@@ -1,4 +1,6 @@
 import json
+import os
+import time
 import uuid
 
 import numpy as np
@@ -11,6 +13,9 @@ class RecordFunctionTracer:
         self.trace_path = (
             f"{output_path}/profiler_traces/profiler_trace_{trace_id}.json"
         )
+        self.enter_wall_ms = 0.0
+        self.exit_wall_ms = 0.0
+        self._events = None
 
     def __enter__(self):
         self.profiler = torch.profiler.profile(
@@ -20,8 +25,10 @@ class RecordFunctionTracer:
             ],
         )
         self.profiler.__enter__()
+        self.enter_wall_ms = (time.perf_counter() - enter_start) * 1e3
 
     def __exit__(self, *args):
+        exit_start = time.perf_counter()
         self.profiler.__exit__(None, None, None)
         torch.cuda.synchronize()
         self.profiler.export_chrome_trace(self.trace_path)
@@ -60,7 +67,28 @@ class RecordFunctionTracer:
     def get_operation_time_stats(self):
         stats = {}
 
-        trace = json.load(open(self.trace_path, "r"))["traceEvents"]
+        if self._events is not None:
+            trace = [event.key_averages_entry.trace_name for event in []]
+            del trace
+            trace = []
+            for event in self._events:
+                trace.append(
+                    {
+                        "cat": event.trace_name.split("::")[0]
+                        if "::" in event.trace_name
+                        else event.trace_name,
+                        "name": event.name,
+                        "ts": event.time_range.start,
+                        "dur": event.time_range.elapsed_us(),
+                    }
+                )
+            trace.extend(
+                json.load(open(self.trace_path, "r"))["traceEvents"]
+                if not trace and os.path.exists(self.trace_path)
+                else []
+            )
+        else:
+            trace = json.load(open(self.trace_path, "r"))["traceEvents"]
 
         for event in trace:
             if not ("cat" in event and event["cat"] == "user_annotation"):

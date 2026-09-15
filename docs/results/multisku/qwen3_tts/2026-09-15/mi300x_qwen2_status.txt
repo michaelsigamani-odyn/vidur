@@ -1,0 +1,14 @@
+python3 -c "from pathlib import Path; p=Path('/app/vidur-odyn/profiling_outputs_amd_qwen2_20260915_0335/logs/mlp_qwen2_mi300x.log'); print('exists',p.exists(),'size',p.stat().st_size if p.exists() else -1)"
+exit
+
+-- RUNPOD.IO --
+Enjoy your Pod #5idcv7q4pshrwu ^_^
+
+python3 -c "from pathlib import Path; p=Path('/app/vidur-odyn/profiling_outputs_amd_qwen2_20260915_0335/logs/mlp_qwen2_mi300x.log'); print('exists',p.exists(),'size',p.stat().st_size if p.exists() else -1)"
+exit
+python3 -c "from pathlib import Path; p=Path('/app/vidur-odyn/profiling_outputs_amd_qwen2_20260915_0335/logs/mlp_qwen2_mi300x.log'); print('exists',p.exists(),'size',p.stat().st_size if p.exists() else -1)"
+exit
+[?2004h]0;root@47eeada1455c: /approot@47eeada1455c:/app# python3 -c "from pathlib import Path; p=Path('/app/vidur--odyn/profiling_outputs_amd_qwen2_20260915_0335/logs/mlp_qwen2_mi300x.log'); prinnt('exists',p.exists(),'size',p.stat().st_size if p.exists() else -1)"
+[?2004lexists True size 374714
+[?2004h]0;root@47eeada1455c: /approot@47eeada1455c:/app# [Kexit
+[?2004lexit

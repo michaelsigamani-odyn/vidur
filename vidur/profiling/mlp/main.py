@@ -15,6 +15,27 @@ from vidur.profiling.mlp.mlp_wrapper import MlpWrapper
 from vidur.profiling.utils import ProfileMethod, get_num_tokens_to_profile
 
 
+def normalize_mlp_results_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = pd.json_normalize(df["time_stats"]).add_prefix("time_stats.").join(
+        df.drop(columns=["time_stats"])
+    )
+
+    ordered_columns = []
+    for timer_name in MLP_TIMER_NAMES:
+        for stat_name in MLP_TIMER_STATS:
+            column_name = f"time_stats.{timer_name}.{stat_name}"
+            if column_name not in df.columns:
+                df[column_name] = float("nan")
+            ordered_columns.append(column_name)
+
+    for base_column in MLP_BASE_COLUMNS:
+        if base_column not in df.columns:
+            df[base_column] = float("nan")
+        ordered_columns.append(base_column)
+
+    return df[ordered_columns]
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="MLP Profiling")
     parser.add_argument(
@@ -87,6 +108,7 @@ def profile_model(
     promises = []
     all_results = []
     unsupported = []
+    overhead_records = []
 
     model_wrapper_actor = None
     if not args.disable_ray:
@@ -176,6 +198,27 @@ def main():
     yaml.dump(vars(args), open(f"{args.output_dir}/config.yaml", "w"))
 
     num_tokens_to_profile = get_num_tokens_to_profile(args.max_tokens)
+
+    triton_cache_dir = os.environ.get("TRITON_CACHE_DIR", os.path.expanduser("~/.triton/cache"))
+    triton_cache_size_bytes_once = 0
+    triton_cache_scan_wall_ms_once = 0.0
+    if args.cache_size_scan_mode == "once":
+        cache_scan_once_start = time.perf_counter()
+        triton_cache_size_bytes_once = _get_triton_cache_size_bytes()
+        triton_cache_scan_wall_ms_once = (time.perf_counter() - cache_scan_once_start) * 1e3
+
+    telemetry_sampler = None
+    if args.telemetry_mode == "background":
+        try:
+            telemetry_sampler = BackgroundGpuTelemetrySampler(
+                output_dir=args.output_dir,
+                gpu_vendor=args.gpu_vendor,
+                interval_seconds=args.telemetry_interval_seconds,
+            )
+            telemetry_sampler.start()
+        except Exception as exc:
+            logger.warning("Background telemetry disabled: %s", exc)
+            telemetry_sampler = None
 
     total_combos = itertools.product(
         args.models,
