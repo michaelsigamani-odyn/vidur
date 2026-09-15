@@ -1,0 +1,14 @@
+{
+  "host": "runpod-mi300x",
+  "captured_at_utc": "2026-09-15T04:05:00Z",
+  "workspace": "/app/vidur-odyn",
+  "preflight_artifact": "../../preflight/runpod-mi300x_env.json",
+  "profiling_outputs_amd_present": true,
+  "profiling_outputs_amd_file_count": 0,
+  "qwen_25_7b_artifacts_found": false,
+  "qwen_25_14b_artifacts_found": false,
+  "notes": [
+    "No MI300X Qwen profiling metric files were present in /app/vidur-odyn/profiling_outputs_amd at capture time.",
+    "This inventory is committed so the MI300X gap is explicit and queryable."
+  ]
+}
