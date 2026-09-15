@@ -30,6 +30,13 @@
 
 ## Current State
 
-- NVIDIA bring-up: model download/init reached, final serve step blocked by missing deploy YAML.
+- NVIDIA bring-up retry:
+  - Deploy-config path blocker was bypassed by launching from `/usr/local/lib/python3.12/dist-packages`.
+  - DGX3 then failed at engine init with `AssertionError` in `SupportsMRoPE` path.
+  - DGX1 stays `Up` with deep init logs, but readiness probe on `/v1/models` repeatedly resets connection.
 - MI300X profiling: run remains blocked by `tp_size` incompatibility.
 - No new successful latency/throughput metrics produced in this capture window.
+
+## Code Patch Applied
+
+- `vidur/profiling/model_executor_backend.py` now adapts linear-layer constructor kwargs to runtime vLLM signature via `inspect.signature`, avoiding hardcoded `tp_size`/`tp_rank`/`return_bias` assumptions.

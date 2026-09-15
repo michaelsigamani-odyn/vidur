@@ -1,0 +1,3 @@
+(APIServer pid=1) INFO 09-15 05:25:32 [api_utils.py:286] non-default args: {'model_tag': 'Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice', 'port': 8091, 'model': 'Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice', 'trust_remote_code': True, 'enforce_eager': True, 'gpu_memory_utilization': 0.6}
+(EngineCore pid=302) INFO 09-15 05:25:50 [speaker_cache.py:239] Speaker cache ready (max_bytes=536870912)
+endpoint_probe: curl http://127.0.0.1:8091/v1/models -> Recv failure: Connection reset by peer (3/3 attempts)

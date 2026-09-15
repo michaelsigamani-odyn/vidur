@@ -7,12 +7,12 @@
       "platform": "nvidia",
       "host": "odyn-dgx1",
       "container": "qwen3tts_dgx1",
-      "status": "failed",
-      "status_detail": "Exited (1)",
-      "blocking_error": "FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml",
+      "status": "degraded",
+      "status_detail": "Up with unresolved readiness",
+      "blocking_error": "readiness probe to /v1/models returns connection reset",
       "artifacts": [
         "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1.status.txt",
-        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1_error_excerpt.txt"
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1_endpoint_probe.txt"
       ]
     },
     {
@@ -21,10 +21,10 @@
       "container": "qwen3tts_dgx3",
       "status": "failed",
       "status_detail": "Exited (1)",
-      "blocking_error": "FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml",
+      "blocking_error": "AssertionError in vllm.v1.worker.gpu.mm.rope SupportsMRoPE check",
       "artifacts": [
         "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3.status.txt",
-        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3_error_excerpt.txt"
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3_mrope_assertion_excerpt.txt"
       ]
     },
     {

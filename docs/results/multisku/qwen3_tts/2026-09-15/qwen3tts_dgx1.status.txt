@@ -1,1 +1,1 @@
-0a410aa47bdb|Exited (1) 18 minutes ago||qwen3tts_dgx1
+41dd9021f13b|Up 5 minutes|0.0.0.0:8091->8091/tcp, [::]:8091->8091/tcp|qwen3tts_dgx1

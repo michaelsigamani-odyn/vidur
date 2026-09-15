@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
 from dataclasses import dataclass
+import inspect
 from math import ceil
 from typing import Any, List, Type
 
@@ -596,6 +597,8 @@ class VllmRocmBackend(ModelExecutorBackend):
             ColumnParallelLinear as VllmColumnParallelLinear,
         )
 
+        params = inspect.signature(VllmColumnParallelLinear.__init__).parameters
+
         class ColumnParallelLinear(VllmColumnParallelLinear):
             def __init__(
                 self,
@@ -606,16 +609,22 @@ class VllmRocmBackend(ModelExecutorBackend):
                 linear_metric_name: str = "",
                 world_size: int = 1,
             ):
-                super().__init__(
+                kwargs: dict[str, Any] = dict(
                     input_size=input_size,
                     output_size=output_size,
                     bias=bias,
                     gather_output=gather_output,
                     prefix=linear_metric_name,
-                    tp_size=world_size,
-                    tp_rank=0,
-                    return_bias=True,
                 )
+                if "tp_size" in params:
+                    kwargs["tp_size"] = world_size
+                if "tp_rank" in params:
+                    kwargs["tp_rank"] = 0
+                if "return_bias" in params:
+                    kwargs["return_bias"] = True
+                if "skip_bias_add" in params:
+                    kwargs["skip_bias_add"] = True
+                super().__init__(**kwargs)
 
         return ColumnParallelLinear
 
@@ -623,6 +632,8 @@ class VllmRocmBackend(ModelExecutorBackend):
         from vllm.model_executor.layers.linear import (
             RowParallelLinear as VllmRowParallelLinear,
         )
+
+        params = inspect.signature(VllmRowParallelLinear.__init__).parameters
 
         class RowParallelLinear(VllmRowParallelLinear):
             def __init__(
@@ -637,15 +648,19 @@ class VllmRocmBackend(ModelExecutorBackend):
             ):
                 del world_size
                 effective_bias = bias and reduce_results
-                super().__init__(
+                kwargs: dict[str, Any] = dict(
                     input_size=input_size,
                     output_size=output_size,
                     bias=effective_bias,
                     input_is_parallel=input_is_parallel,
                     reduce_results=reduce_results,
                     prefix=linear_metric_name,
-                    return_bias=True,
                 )
+                if "return_bias" in params:
+                    kwargs["return_bias"] = True
+                if "skip_bias_add" in params:
+                    kwargs["skip_bias_add"] = True
+                super().__init__(**kwargs)
 
         return RowParallelLinear
 
