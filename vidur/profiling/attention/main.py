@@ -259,15 +259,8 @@ def profile_model(
     all_results = []
     unsupported = []
 
-    model_wrapper_actor = ray.remote(
-        num_cpus=1,
-        num_gpus=1,
-    )(
-        AttentionWrapper,
-    ).options(runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}})
-
-    model_wrappers = [
-        model_wrapper_actor.remote(
+    def _build_wrapper() -> AttentionWrapper:
+        return AttentionWrapper(
             model_config,
             parallel_config,
             max_num_blocks,
@@ -278,21 +271,27 @@ def profile_model(
             gpu_vendor,
             model_executor_backend_name,
         )
-        for _ in range(args.num_gpus)
-    ]
 
-    def _create_wrapper(worker_rank: int):
-        return model_wrapper_actor.remote(
-            model_config,
-            parallel_config,
-            max_num_blocks,
-            args.max_model_len,
-            args.block_size,
-            args.attention_backend,
-            dtype,
-            gpu_vendor,
-            model_executor_backend_name,
+    if args.disable_ray:
+        model_wrappers: Any = [_build_wrapper() for _ in range(args.num_gpus)]
+    else:
+        model_wrapper_actor = ray.remote(num_cpus=1, num_gpus=1)(AttentionWrapper).options(
+            runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}}
         )
+        model_wrappers = [
+            model_wrapper_actor.remote(
+                model_config,
+                parallel_config,
+                max_num_blocks,
+                args.max_model_len,
+                args.block_size,
+                args.attention_backend,
+                dtype,
+                gpu_vendor,
+                model_executor_backend_name,
+            )
+            for _ in range(args.num_gpus)
+        ]
 
     points_ran = 0
 
@@ -312,7 +311,11 @@ def profile_model(
 
         start_time = time.perf_counter()
         try:
-            result = ray.get(model_wrappers[worker_id].profile.remote(attention_input))
+            result = (
+                model_wrappers[worker_id].profile(attention_input)
+                if args.disable_ray
+                else ray.get(model_wrappers[worker_id].profile.remote(attention_input))
+            )
             if result:
                 all_results.append(result)
             status = "ok"
@@ -326,7 +329,21 @@ def profile_model(
                     "error": error_message,
                 }
             )
-            model_wrappers[worker_id] = _create_wrapper(worker_id)
+            model_wrappers[worker_id] = (
+                _build_wrapper()
+                if args.disable_ray
+                else model_wrapper_actor.remote(
+                    model_config,
+                    parallel_config,
+                    max_num_blocks,
+                    args.max_model_len,
+                    args.block_size,
+                    args.attention_backend,
+                    dtype,
+                    gpu_vendor,
+                    model_executor_backend_name,
+                )
+            )
 
         wall_clock_ms = (time.perf_counter() - start_time) * 1e3
         latest_result = all_results[-1] if (status == "ok" and all_results) else {}
@@ -372,6 +389,15 @@ def profile_model(
             if col not in df.columns:
                 df[col] = 0.0
     return df, unsupported
+
+
+def ensure_local_ray_initialized() -> None:
+    if ray.is_initialized():
+        return
+    try:
+        ray.init(ignore_reinit_error=True, address="local", python_version_match_level="minor")
+    except RuntimeError:
+        ray.init(ignore_reinit_error=True, address="local")
 
 
 def run_attention_correctness_check(
@@ -521,6 +547,8 @@ def run_attention_correctness_check(
 
 def main():
     args = parse_args()
+    if not args.disable_ray:
+        ensure_local_ray_initialized()
 
     model_executor_backend = create_model_executor_backend(
         gpu_vendor=args.gpu_vendor,

@@ -303,10 +303,14 @@ class _VllmTritonAttentionWrapperAdapter:
         return torch.cat(tensors, dim=0)
 
     def forward(self, query: Any, key: Any, value: Any, kv_cache: Any) -> Any:
-        from vllm.attention.ops.triton_flash_attention import (
-            triton_attention as unified_attention,
-        )
-        use_unified_attention = False
+        try:
+            from vllm.v1.attention.ops.triton_unified_attention import unified_attention
+            use_unified_attention = True
+        except ModuleNotFoundError:
+            from vllm.attention.ops.triton_flash_attention import (
+                triton_attention as unified_attention,
+            )
+            use_unified_attention = False
 
         if self._seq_metadata_list is None:
             raise RuntimeError("begin_forward must be called before forward")
@@ -374,44 +378,24 @@ class _VllmTritonAttentionWrapperAdapter:
         attn_timer_name = "attn_prefill" if self._is_prefill_mode else "attn_decode"
         with self._cuda_timer_cls(attn_timer_name):
             if use_unified_attention:
-                try:
-                    unified_attention(
-                        q=q,
-                        k=k_cache,
-                        v=v_cache,
-                        out=out,
-                        cu_seqlens_q=cu_seqlens_q,
-                        max_seqlen_q=max_q_len,
-                        seqused_k=seqused_k,
-                        max_seqlen_k=max_kv_len,
-                        softmax_scale=self._softmax_scale,
-                        causal=True,
-                        window_size=(-1, -1),
-                        block_table=block_table,
-                        softcap=0.0,
-                        q_descale=None,
-                        k_descale=None,
-                        v_descale=None,
-                    )
-                except TypeError:
-                    unified_attention(
-                        q,
-                        k_cache,
-                        v_cache,
-                        out,
-                        cu_seqlens_q,
-                        max_q_len,
-                        seqused_k,
-                        max_kv_len,
-                        self._softmax_scale,
-                        True,
-                        (-1, -1),
-                        block_table,
-                        0.0,
-                        None,
-                        None,
-                        None,
-                    )
+                unified_attention(
+                    q=q,
+                    k=k_cache,
+                    v=v_cache,
+                    out=out,
+                    cu_seqlens_q=cu_seqlens_q,
+                    max_seqlen_q=max_q_len,
+                    seqused_k=seqused_k,
+                    max_seqlen_k=max_kv_len,
+                    softmax_scale=self._softmax_scale,
+                    causal=True,
+                    window_size=(-1, -1),
+                    block_table=block_table,
+                    softcap=0.0,
+                    q_descale=None,
+                    k_descale=None,
+                    v_descale=None,
+                )
             else:
                 dense_k = self._build_dense_kv_tensor(k_cache, seq_metadata_list, kv_lengths)
                 dense_v = self._build_dense_kv_tensor(v_cache, seq_metadata_list, kv_lengths)
