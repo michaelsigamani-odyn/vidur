@@ -36,6 +36,27 @@ def normalize_mlp_results_df(df: pd.DataFrame) -> pd.DataFrame:
     return df[ordered_columns]
 
 
+def normalize_mlp_results_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = pd.json_normalize(df["time_stats"]).add_prefix("time_stats.").join(
+        df.drop(columns=["time_stats"])
+    )
+
+    ordered_columns = []
+    for timer_name in MLP_TIMER_NAMES:
+        for stat_name in MLP_TIMER_STATS:
+            column_name = f"time_stats.{timer_name}.{stat_name}"
+            if column_name not in df.columns:
+                df[column_name] = float("nan")
+            ordered_columns.append(column_name)
+
+    for base_column in MLP_BASE_COLUMNS:
+        if base_column not in df.columns:
+            df[base_column] = float("nan")
+        ordered_columns.append(base_column)
+
+    return df[ordered_columns]
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="MLP Profiling")
     parser.add_argument(
