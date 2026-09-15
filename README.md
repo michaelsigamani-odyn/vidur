@@ -1,6 +1,6 @@
 # Vidur: LLM Inference System Simulator
 
-Vidur is a high-fidelity and extensible LLM inference system simulator. It can help you with:
+Viidur is a high-fidelity and extensible LLM inference system simulator. It can help you with:
 
 1. Study the system performance of models under different workloads and configurations.
 
