@@ -12,7 +12,7 @@
       "blocking_error": "FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml",
       "artifacts": [
         "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1.status.txt",
-        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1.log"
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx1_error_excerpt.txt"
       ]
     },
     {
@@ -24,7 +24,7 @@
       "blocking_error": "FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml",
       "artifacts": [
         "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3.status.txt",
-        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3.log"
+        "docs/results/multisku/qwen3_tts/2026-09-15/qwen3tts_dgx3_error_excerpt.txt"
       ]
     },
     {
@@ -36,7 +36,7 @@
       "blocking_error": "TypeError: ColumnParallelLinear.__init__() got an unexpected keyword argument 'tp_size'",
       "artifacts": [
         "docs/results/multisku/qwen3_tts/2026-09-15/mi300x_qwen2_status.txt",
-        "docs/results/multisku/qwen3_tts/2026-09-15/mi300x_qwen2_mlp_tail.log"
+        "docs/results/multisku/qwen3_tts/2026-09-15/mi300x_tp_size_error_excerpt.txt"
       ]
     }
   ]

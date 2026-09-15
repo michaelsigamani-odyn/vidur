@@ -1,0 +1,5 @@
+[0;36m(APIServer pid=1)[0;0m INFO 09-15 04:34:14 [omni_base.py:207] [AsyncOmni] Initializing with model Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+[0;36m(APIServer pid=1)[0;0m INFO 09-15 04:34:14 [async_omni_engine.py:170] [AsyncOmniEngine] Initializing with model Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+[0;36m(APIServer pid=1)[0;0m Traceback (most recent call last):
+[0;36m(APIServer pid=1)[0;0m     raise FileNotFoundError(f"Deploy config not found: {deploy_path}")
+[0;36m(APIServer pid=1)[0;0m FileNotFoundError: Deploy config not found: vllm_omni/deploy/qwen3_tts.yaml

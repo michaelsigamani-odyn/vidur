@@ -10,9 +10,11 @@
 
 - `qwen3tts_dgx1.status.txt`: container `qwen3tts_dgx1` exited with code 1.
 - `qwen3tts_dgx3.status.txt`: container `qwen3tts_dgx3` exited with code 1.
-- `qwen3tts_dgx1.log` and `qwen3tts_dgx3.log`: identical startup trace and terminal failure.
+- `qwen3tts_dgx1.log` and `qwen3tts_dgx3.log`: identical startup trace and terminal failure (uploaded to GCS).
+- `qwen3tts_dgx1_error_excerpt.txt` and `qwen3tts_dgx3_error_excerpt.txt`: committed failure excerpts.
 - `mi300x_qwen2_status.txt`: MI300X log file exists and is being updated.
-- `mi300x_qwen2_mlp_tail.log`: repeated actor creation failures in MLP profiler.
+- `mi300x_qwen2_mlp_tail.log`: repeated actor creation failures in MLP profiler (uploaded to GCS).
+- `mi300x_tp_size_error_excerpt.txt`: committed MI300X API-drift error excerpt.
 
 ## DGX Failure Signature
 
